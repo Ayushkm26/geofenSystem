@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("ADMIN") // ADMIN, SUPER_ADMIN, MANAGER
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  geofences GeoFenceArea[]
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  name          String
+  password      String
+  role          String     @default("USER") // USER, MANAGER
+  createdAt     DateTime   @default(now())
+  currentStatus Boolean    @default(false)
+  totalInOut    Int        @default(0)
+  lastAreaId    String?
+  locationLogs  Location[]
+}
+
+
+
+model Location {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  areaId        String?
+  areaName      String?
+  locationSharingTime  DateTime @default(now())
+  isDisconnected Boolean  @default(false)
+  inTime        DateTime?
+  inLongitude   Float
+  inLatitude    Float
+  outTime       DateTime?
+  outLongitude  Float?
+  outLatitude   Float?
+  totalTime     Int?     
+  currentStatus Boolean  @default(true)
+}
+
+
+
+model GeoFenceArea {
+  id           String   @id @default(uuid())
+  name         String
+  longitude    Float
+  latitude     Float
+  type         String   // e.g., "circle", "polygon"
+  description  String?
+  coordinates  String   // Store as JSON for polygon/multi-point areas
+  radius       Float?   // in meters (for circles)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isActive     Boolean  @default(true)
+
+  createdBy    String
+  admin        Admin    @relation(fields: [createdBy], references: [id])
+}
+model JwtToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique       // store full JWT (or hash - see note)
+  type       String   // "ACCESS" | "REFRESH"
+  issuedAt   DateTime @default(now())
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  revokedAt  DateTime?
+  reason     String?                // e.g., "LOGOUT" | "ADMIN_REVOKE"
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
