@@ -5,6 +5,7 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { persistToken, revokeToken, signAccessToken, signRefreshToken } from "../auth/token";
+import { createGeofenceArea } from "../utils/geoFenceArea";
 
 export const createAdmin = async (req: Request, res: Response) => {
     const prisma = new PrismaClient();
@@ -97,13 +98,39 @@ export const logoutAdmin = async (req: Request, res: Response) => {
   }
 }
 export const addGeofence = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
     try {
-        const { name, coordinates } = req.body;
-        if (!name || !coordinates) {
-            return res.status(400).json({ error: 'Name and coordinates are required' });
-        }
-        // Logic to add geofence
-        res.status(201).json({ message: 'Geofence added successfully' });
+       
+       const { name, longitude, latitude, radius } = req.body;
+
+if (!name || longitude == null || latitude == null || radius == null) {
+    return res.status(400).json({ error: 'Name, longitude, latitude, and radius are required' });
+}
+
+const coordinates = createGeofenceArea(longitude, latitude, radius);
+
+const geofenceData: any = {
+    name,
+    type: coordinates.type,
+    longitude: coordinates.coordinates[0], // longitude
+    latitude: coordinates.coordinates[1], // latitude
+    radius: coordinates.radius,
+    coordinates: JSON.stringify(coordinates)
+};
+if (req.admin?.id) {
+    geofenceData.createdBy = req.admin.id;
+}
+
+const geofence = await prisma.geoFenceArea.create({
+    data: geofenceData,
+});
+
+res.status(201).json({ message: 'Geofence added successfully', geofence });
+
     } catch (error) {
         res.status(500).json({ error: 'Failed to add geofence' });
     }
@@ -149,7 +176,6 @@ export const updateGeofence = async (req: Request, res: Response) => {
         if (!id || !name || !coordinates) {
             return res.status(400).json({ error: 'Geofence ID, name, and coordinates are required' });
         }
-        // Logic to update geofence
         res.status(200).json({ message: 'Geofence updated successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update geofence' });

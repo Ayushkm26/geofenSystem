@@ -30,6 +30,8 @@ model User {
   totalInOut    Int        @default(0)
   lastAreaId    String?
   locationLogs  Location[]
+
+  UserGeofence UserGeofence[]
 }
 
 
@@ -43,13 +45,14 @@ model Location {
   locationSharingTime  DateTime @default(now())
   isDisconnected Boolean  @default(false)
   inTime        DateTime?
-  inLongitude   Float
-  inLatitude    Float
+  inLongitude   Float? @default(0.0)
+  inLatitude    Float? @default(0.0)
   outTime       DateTime?
-  outLongitude  Float?
-  outLatitude   Float?
+  outLongitude  Float? @default(0.0)
+  outLatitude   Float? @default(0.0)
   totalTime     Int?     
   currentStatus Boolean  @default(true)
+  isSwitched   Boolean  @default(false)
 }
 
 
@@ -61,14 +64,16 @@ model GeoFenceArea {
   latitude     Float
   type         String   // e.g., "circle", "polygon"
   description  String?
-  coordinates  String   // Store as JSON for polygon/multi-point areas
+  coordinates  String?   // Store as JSON for polygon/multi-point areas
   radius       Float?   // in meters (for circles)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   isActive     Boolean  @default(true)
-
+  totalActiveUsers Int   @default(0)
   createdBy    String
   admin        Admin    @relation(fields: [createdBy], references: [id])
+
+  UserGeofence UserGeofence[]
 }
 model JwtToken {
   id         String   @id @default(uuid())
@@ -84,5 +89,17 @@ model JwtToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+model UserGeofence {
+  id         String   @id @default(uuid())
+  userId     String
+  geofenceId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id])
+  geoFenceArea   GeoFenceArea @relation(fields: [geofenceId], references: [id])
+
+  @@unique([userId, geofenceId])
 }
 

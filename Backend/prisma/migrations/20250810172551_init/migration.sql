@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "public"."Location" ALTER COLUMN "inLongitude" DROP NOT NULL,
+ALTER COLUMN "inLongitude" SET DEFAULT 0.0,
+ALTER COLUMN "inLatitude" DROP NOT NULL,
+ALTER COLUMN "inLatitude" SET DEFAULT 0.0,
+ALTER COLUMN "outLongitude" SET DEFAULT 0.0,
+ALTER COLUMN "outLatitude" SET DEFAULT 0.0;

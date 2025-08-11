@@ -1,13 +1,12 @@
-const express = require('express');
+import { createClient } from "redis";
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
-
+import  { Redis } from 'ioredis';
 import bcrypt from 'bcryptjs';
 import { signAccessToken,signRefreshToken,persistToken ,revokeToken} from "../auth/token";
-
-const router = express.Router();
+import { checkIfInsideAnyFence } from '../utils/geoFenceArea';
 const createUser = async (req: Request, res: Response) => {
     const prisma = new PrismaClient();
     const errors = validationResult(req);
@@ -103,34 +102,154 @@ export const logoutUser = async (req: Request, res: Response) => {
   }
 }
 export const logLocation = async (req: Request, res: Response) => {
-    try {
-      
-      const id = req.user?.id;
-        const { latitude, longitude, areaId, areaName } = req.body;
-        if (!latitude || !longitude) {
-            return res.status(400).json({ error: 'Latitude and longitude are required' });
-        }
-        if (!id) {
-            return res.status(400).json({ error: 'User ID is required' });
-        }
-        const prisma = new PrismaClient();
-       const location = await prisma.location.create({
-            data: {
-                userId: id,
-                inLatitude: latitude,
-                inLongitude: longitude,
-                areaId: areaId || null,
-                areaName: areaName || null,
-                locationSharingTime: new Date(), // Removed because not in Prisma schema
-                isDisconnected: false
-            },
-        });
-        // Logic to handle geofencing can be added here
-        res.status(200).json({ message: 'Location logged successfully', location });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to log location' });
+     const prisma = new PrismaClient();
+  const redis = createClient({ url: process.env.REDIS_URL });
+  await redis.connect();
+
+  try {
+    const id = req.user?.id; // Middleware sets req.user
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: "Latitude and longitude are required" });
     }
-}
+    if (!id) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Current fences
+    const insideFences = await checkIfInsideAnyFence(latitude, longitude);
+    console.log(insideFences);
+    const isCurrentlyInside = insideFences.length > 0;
+    const currentFence = isCurrentlyInside ? insideFences[0] : null;
+    console.log(currentFence);
+
+    // Last open location session
+    const lastRecord = await prisma.location.findFirst({
+      where: { userId: id },
+      orderBy: { inTime: "desc" }
+    });
+    const wasPreviouslyInside = lastRecord && !lastRecord.isDisconnected;
+
+    let eventType: "ENTER" | "EXIT" | "SWITCH" | null = null;
+    let payload: Record<string, any> = {};
+
+    // ENTER — previously outside, now inside
+    if (isCurrentlyInside && !wasPreviouslyInside) {
+      eventType = "ENTER";
+      const newRecord = await prisma.location.create({
+        data: {
+          userId: id,
+          areaId: currentFence!.id,
+          areaName: currentFence!.name,
+          inLatitude: latitude,
+          inLongitude: longitude,
+          inTime: new Date(),
+          isDisconnected: false
+        }
+      });
+      const newuserInfence = await prisma.userGeofence.create({
+        data: {
+          userId: id,
+          geofenceId: currentFence!.id,
+        }
+      });
+      payload = { ...newRecord , userInfence: newuserInfence };
+    }
+
+    // EXIT — previously inside, now outside
+    if (!isCurrentlyInside && wasPreviouslyInside) {
+      eventType = "EXIT";
+      const updatedRecord = await prisma.location.update({
+        where: { id: lastRecord!.id },
+        data: {
+          outLatitude: latitude,
+          outLongitude: longitude,
+          outTime: new Date(),
+          isDisconnected: true
+        }
+      });
+      if (lastRecord!.areaId !== null) {
+        await prisma.userGeofence.deleteMany({
+          where: {
+            userId: id,
+            geofenceId: lastRecord!.areaId
+          }
+        });
+      }
+      payload = { ...updatedRecord,};
+    }
+
+    // SWITCH — previously inside fence A, now inside fence B
+    if (
+      isCurrentlyInside &&
+      wasPreviouslyInside &&
+      lastRecord!.areaId !== currentFence!.id
+    ) {
+      eventType = "SWITCH";
+
+      // 1️⃣ Close old record
+      await prisma.location.update({
+        where: { id: lastRecord!.id },
+        data: {
+          outLatitude: latitude,
+          outLongitude: longitude,
+          outTime: new Date(),
+          isDisconnected: true,
+          isSwitched: true // Mark as switched
+        }
+      });
+      if (lastRecord!.areaId !== null) {
+        await prisma.userGeofence.deleteMany({
+          where: {
+            userId: id,
+            geofenceId: lastRecord!.areaId
+          }
+        });
+      }
+      
+      // 2️⃣ Create new record for the new fence
+      const newRecord = await prisma.location.create({
+        data: {
+          userId: id,
+          areaId: currentFence!.id,
+          areaName: currentFence!.name,
+          inLatitude: latitude,
+          inLongitude: longitude,
+          inTime: new Date(),
+          isDisconnected: false
+        }
+      });
+      const newuserInfence = await prisma.userGeofence.create({
+        data: {
+          userId: id,
+          geofenceId: currentFence!.id,
+        }
+      });
+      payload = { ...newRecord , userInfence: newuserInfence };
+    }
+
+    // No change → skip
+    if (!eventType) {
+      return res.status(200).json({ message: "No status change" });
+    }
+
+    // Push event to Redis
+    await redis.lPush(
+      "geofence-events",
+      JSON.stringify({ type: eventType, data: payload })
+    );
+
+    res.status(200).json({ message: `Queued ${eventType} event`, payload });
+
+  } catch (error) {
+    console.error("Error processing location:", error);
+    res.status(500).json({ error: "Failed to process location" });
+  } finally {
+    await redis.disconnect();
+    await prisma.$disconnect();
+  }
+};
 export const getLocation = async (req: Request, res: Response) => { 
     try {
         // Logic to retrieve the location
@@ -161,3 +280,5 @@ export const getLocationHistory = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Failed to retrieve location history' });
     }
 }
+
+
