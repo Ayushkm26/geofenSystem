@@ -6,7 +6,7 @@ import { isTokenValid } from "../auth/token";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; role?: string };
+      user?: { id: string; role?: string; email?: string };
     }
   }
 }
@@ -20,7 +20,7 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
     // Verify access token
     let payload;
     try {
-      payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as { sub: string; role?: string };
+      payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as { sub: string; role?: string; email?: string };
       console.log(payload.role);
       if (payload.role !== "USER") {
         return res.status(403).json({ error: "Not authorized to log out user" });
@@ -32,7 +32,7 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
         if (!refreshToken) return res.status(401).json({ error: "Refresh token required" });
 
         try {
-          const refreshPayload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { sub: string; role?: string }
+          const refreshPayload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { sub: string; role?: string; email?: string };
           if (refreshPayload.role !== "USER") {
             return res.status(403).json({ error: "Not authorized as a user" });
           }
@@ -58,7 +58,8 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
     const ok = await isTokenValid(token, "ACCESS");
     if (!ok) return res.status(401).json({ error: "Token revoked or expired" });
 
-    req.user = { id: payload.sub , role: payload.role };
+    req.user = { id: payload.sub , role: payload.role ,email: payload.email };
+    console.log(payload.email);
     next();
   } catch (err) {
     return res.status(401).json({error: "Invalid token"});

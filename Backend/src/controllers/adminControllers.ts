@@ -136,46 +136,99 @@ res.status(201).json({ message: 'Geofence added successfully', geofence });
     }
 }
 export const deleteGeofence = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
     try {
         const { id } = req.params;
         if (!id) {
             return res.status(400).json({ error: 'Geofence ID is required' });
         }
-        // Logic to delete geofence
+
+        await prisma.geoFenceArea.delete({
+            where: { id }
+        });
+
         res.status(200).json({ message: 'Geofence deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to delete geofence' });
     }
 }
 export const getGeofences = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
     try {
-        // Logic to retrieve all geofences
-        // Example empty array
-        res.status(200).json();
+        const geofences = await prisma.geoFenceArea.findMany({
+            select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radius: true,
+                createdBy: true
+            }
+        });
+        res.status(200).json({ geofences });
     } catch (error) {
         res.status(500).json({ error: 'Failed to retrieve geofences' });
     }
 }
 export const getGeofenceDetails = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
     try {
         const { id } = req.params;
         if (!id) {
             return res.status(400).json({ error: 'Geofence ID is required' });
         }
-        // Logic to retrieve geofence details
-        const geofence = { id, name: 'Example Geofence' }; // Example geofence
+        const geofence = await prisma.geoFenceArea.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radius: true,
+                createdBy: true,
+                coordinates: true
+            }
+        });
+        if (!geofence) {
+            return res.status(404).json({ error: 'Geofence not found' });
+        }
+        // Parse coordinates if stored as JSON string
+        if (typeof geofence.coordinates === 'string') {
+            geofence.coordinates = JSON.parse(geofence.coordinates);
+        }
         res.status(200).json(geofence);
     } catch (error) {
         res.status(500).json({ error: 'Failed to retrieve geofence details' });
     }
 }
 export const updateGeofence = async (req: Request, res: Response) => {
+    const prisma = new PrismaClient();
     try {
         const { id } = req.params;
-        const { name, coordinates } = req.body;
-        if (!id || !name || !coordinates) {
-            return res.status(400).json({ error: 'Geofence ID, name, and coordinates are required' });
+        const { name, longitude, latitude, radius } = req.body;
+        if (!id || !name || !longitude || !latitude || !radius) {
+            return res.status(400).json({ error: 'Geofence ID, name, coordinates, and radius are required' });
         }
+
+        const coordinates = createGeofenceArea(longitude, latitude, radius);
+
+        const geofenceData: any = {
+            name,
+            type: coordinates.type,
+            longitude: coordinates.coordinates[0], // longitude
+            latitude: coordinates.coordinates[1], // latitude
+            radius: coordinates.radius,
+            coordinates: JSON.stringify(coordinates)
+        };
+        if (req.admin?.id) {
+            geofenceData.createdBy = req.admin.id;
+        }
+
+        await prisma.geoFenceArea.update({
+            where: { id },
+            data: geofenceData
+        });
+
         res.status(200).json({ message: 'Geofence updated successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update geofence' });

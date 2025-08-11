@@ -1,6 +1,6 @@
 import { Router } from "express";
 import createUser from "../controllers/userControllers";
-import { loginUser, logoutUser,logLocation , getLocation,GeofenceDetails, getLocationHistory} from "../controllers/userControllers";
+import { loginUser, logoutUser,logLocation ,GeofenceDetails, getLocationHistory} from "../controllers/userControllers";
 import { authUserMiddleware } from "../middlewares/userMiddlewares";
 import { body } from 'express-validator';
 const router = Router();
@@ -19,7 +19,6 @@ router.post("/login",[
 ], loginUser);
 router.post('/logout', authUserMiddleware, logoutUser);
 router.post("/logLocation",authUserMiddleware,logLocation)
-router.get("/getLocation",authUserMiddleware,getLocation);
 router.get("/geofenceDetails", authUserMiddleware, GeofenceDetails);
 router.get("/locationHistory" ,authUserMiddleware,getLocationHistory)
 
