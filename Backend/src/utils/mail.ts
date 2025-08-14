@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER, // Your Gmail
+    user: process.env.GMAIL_USER, 
     pass: process.env.GMAIL_PASS  // App Password
   }
 });
@@ -16,10 +16,10 @@ const formatDate = (date: Date | string) => {
 
 export const sendGeofenceEventEmail = async (
   eventType: "ENTER" | "EXIT" | "SWITCH",
-  payload: any,
-  userEmail: string
+  payload: Record<string, any>,
+  userEmail: string,
+  adminEmail: string
 ) => {
-  const adminEmail = process.env.ADMIN_EMAIL;
   const mapLink = `https://www.google.com/maps?q=${payload.inLatitude || payload.outLatitude},${payload.inLongitude || payload.outLongitude}`;
 
   let subject = "";

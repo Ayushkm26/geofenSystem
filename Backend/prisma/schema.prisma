@@ -3,103 +3,96 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
-
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String         @id @default(uuid())
+  email     String         @unique
   name      String
   password  String
-  role      String   @default("ADMIN") // ADMIN, SUPER_ADMIN, MANAGER
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String         @default("ADMIN")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
   geofences GeoFenceArea[]
 }
 
 model User {
-  id            String     @id @default(uuid())
-  email         String     @unique
+  id            String         @id @default(uuid())
+  email         String         @unique
   name          String
   password      String
-  role          String     @default("USER") // USER, MANAGER
-  createdAt     DateTime   @default(now())
-  currentStatus Boolean    @default(false)
-  totalInOut    Int        @default(0)
+  currentStatus Boolean        @default(false)
+  totalInOut    Int            @default(0)
   lastAreaId    String?
+  createdAt     DateTime       @default(now())
+  role          String         @default("USER")
   locationLogs  Location[]
-
-  UserGeofence UserGeofence[]
+  UserGeofence  UserGeofence[]
 }
-
-
 
 model Location {
-  id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  areaId        String?
-  areaName      String?
-  locationSharingTime  DateTime @default(now())
-  isDisconnected Boolean  @default(false)
-  inTime        DateTime?
-  inLongitude   Float? @default(0.0)
-  inLatitude    Float? @default(0.0)
-  outTime       DateTime?
-  outLongitude  Float? @default(0.0)
-  outLatitude   Float? @default(0.0)
-  totalTime     Int?     
-  currentStatus Boolean  @default(true)
-  isSwitched   Boolean  @default(false)
+  id                  String    @id @default(uuid())
+  userId              String
+  areaId              String?
+  areaName            String?
+  inTime              DateTime?
+  inLongitude         Float?    @default(0.0)
+  inLatitude          Float?    @default(0.0)
+  outTime             DateTime?
+  outLongitude        Float?    @default(0.0)
+  outLatitude         Float?    @default(0.0)
+  totalTime           Int?
+  currentStatus       Boolean   @default(true)
+  isDisconnected      Boolean   @default(false)
+  locationSharingTime DateTime  @default(now())
+  isSwitched          Boolean   @default(false)
+  user                User      @relation(fields: [userId], references: [id])
 }
-
-
 
 model GeoFenceArea {
-  id           String   @id @default(uuid())
-  name         String
-  longitude    Float
-  latitude     Float
-  type         String   // e.g., "circle", "polygon"
-  description  String?
-  coordinates  String?   // Store as JSON for polygon/multi-point areas
-  radius       Float?   // in meters (for circles)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  isActive     Boolean  @default(true)
-  totalActiveUsers Int   @default(0)
-  createdBy    String
-  admin        Admin    @relation(fields: [createdBy], references: [id])
-
-  UserGeofence UserGeofence[]
+  id               String         @id @default(uuid())
+  name             String
+  longitude        Float
+  latitude         Float
+  type             String
+  description      String?
+  coordinates      String?
+  radius           Float?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  isActive         Boolean        @default(true)
+  createdBy        String
+  totalActiveUsers Int            @default(0)
+  admin            Admin          @relation(fields: [createdBy], references: [id])
+  UserGeofence     UserGeofence[]
 }
+
 model JwtToken {
-  id         String   @id @default(uuid())
-  userId     String
-  token      String   @unique       // store full JWT (or hash - see note)
-  type       String   // "ACCESS" | "REFRESH"
-  issuedAt   DateTime @default(now())
-  expiresAt  DateTime
-  revoked    Boolean  @default(false)
-  revokedAt  DateTime?
-  reason     String?                // e.g., "LOGOUT" | "ADMIN_REVOKE"
-  createdAt  DateTime @default(now())
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  type      String
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  revokedAt DateTime?
+  reason    String?
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
 }
-model UserGeofence {
-  id         String   @id @default(uuid())
-  userId     String
-  geofenceId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 
-  user       User     @relation(fields: [userId], references: [id])
-  geoFenceArea   GeoFenceArea @relation(fields: [geofenceId], references: [id])
+model UserGeofence {
+  id           String       @id @default(uuid())
+  userId       String
+  geofenceId   String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  geoFenceArea GeoFenceArea @relation(fields: [geofenceId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
 
   @@unique([userId, geofenceId])
 }
-

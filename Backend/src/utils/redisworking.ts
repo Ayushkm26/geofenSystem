@@ -1,7 +1,7 @@
 import { createClient } from "redis";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client'
+import { withAccelerate } from '@prisma/extension-accelerate'
+const prisma = new PrismaClient().$extends(withAccelerate());
 const redis = createClient({ url: process.env.REDIS_URL });
 
 const processEvent = async (event: string) => {

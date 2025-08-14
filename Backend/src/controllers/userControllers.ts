@@ -1,14 +1,15 @@
 import { createClient } from "redis";
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
+import { withAccelerate } from '@prisma/extension-accelerate'
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
-import  { Redis } from 'ioredis';
 import bcrypt from 'bcryptjs';
 import { signAccessToken,signRefreshToken,persistToken ,revokeToken} from "../auth/token";
 import { checkIfInsideAnyFence } from '../utils/geoFenceArea';
 import { sendGeofenceEventEmail } from "../utils/mail";
 const createUser = async (req: Request, res: Response) => {
+
+    console.log("Creating user...");
     const prisma = new PrismaClient();
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -16,12 +17,20 @@ const createUser = async (req: Request, res: Response) => {
     }
     try {
         const { name, email,password } = req.body;
+         console.log(name);
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
-        if(await prisma.user.findFirst({ where: { email } })) {
-            return res.status(400).json({ error: 'User with this email already exists' });
-        }
+
+        const existingUser = (await prisma.user.findMany({
+        where: { email },
+        take: 1
+        }))[0] || null;
+
+  if (existingUser) {
+    return res.status(400).json({ error: 'User with this email already exists' });
+  }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
             data: {
@@ -30,7 +39,7 @@ const createUser = async (req: Request, res: Response) => {
                 password: hashedPassword,
             },
         });
-
+          console.log("User created:", user);
         const access = signAccessToken({ sub: user.id , role: user.role, email: user.email });
         const refresh = signRefreshToken({ sub: user.id , role: user.role, email: user.email });
 
@@ -40,12 +49,13 @@ const createUser = async (req: Request, res: Response) => {
         await persistToken(refresh, user.id, "REFRESH", refreshExp);
         res.status(200).json({ user: { ...user, password: undefined }, access, refresh });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create user' });
+        const errorDetails = typeof error === "object" && error !== null && "message" in error ? (error as { message?: string }).message : String(error);
+        res.status(500).json({ error: 'Failed to create user', errorDetails });
     }
 }
 export default createUser;
  export const loginUser = async (req: Request, res: Response) => { 
-   const prisma = new PrismaClient();
+   const prisma = new PrismaClient().$extends(withAccelerate());
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -103,7 +113,7 @@ export const logoutUser = async (req: Request, res: Response) => {
   }
 }
 export const logLocation = async (req: Request, res: Response) => {
-     const prisma = new PrismaClient();
+     const prisma = new PrismaClient().$extends(withAccelerate());
   const redis = createClient({ url: process.env.REDIS_URL });
   await redis.connect();
 
@@ -120,10 +130,8 @@ export const logLocation = async (req: Request, res: Response) => {
 
     // Current fences
     const insideFences = await checkIfInsideAnyFence(latitude, longitude);
-    console.log(insideFences);
     const isCurrentlyInside = insideFences.length > 0;
     const currentFence = isCurrentlyInside ? insideFences[0] : null;
-    console.log(currentFence);
 
     // Last open location session
     const lastRecord = await prisma.location.findFirst({
@@ -132,10 +140,10 @@ export const logLocation = async (req: Request, res: Response) => {
     });
     const wasPreviouslyInside = lastRecord && !lastRecord.isDisconnected;
 
+
     let eventType: "ENTER" | "EXIT" | "SWITCH" | null = null;
     let payload: Record<string, any> = {};
 
-    // ENTER — previously outside, now inside
     if (isCurrentlyInside && !wasPreviouslyInside) {
       eventType = "ENTER";
       const newRecord = await prisma.location.create({
@@ -236,15 +244,34 @@ export const logLocation = async (req: Request, res: Response) => {
     }
 
     // Push event to Redis
+    // Find admin email for the geofence the user entered
+    let adminEmail: string | undefined = undefined;
+    if (eventType === "ENTER" || eventType === "SWITCH" ) {
+      // Get geofence details including admin info
+      const geofence = await prisma.geoFenceArea.findUnique({
+      where: { id: currentFence!.id },
+      include: { admin: true }
+      });
+      adminEmail = geofence?.admin?.email;
+    } else if (eventType === "EXIT" && lastRecord?.areaId) {
+      // Get admin email for the previous fence
+      const geofence = await prisma.geoFenceArea.findUnique({
+      where: { id: lastRecord.areaId },
+      include: { admin: true }
+      });
+      adminEmail = geofence?.admin?.email;
+    }
+
     await redis.lPush(
       "geofence-events",
       JSON.stringify({ type: eventType, data: payload })
     );
-     
-     if (!req.user || !req.user.email) {
-        return res.status(400).json({ error: "User email is required to send geofence event email" });
-     }
-     await sendGeofenceEventEmail(eventType, payload, req.user.email);
+
+
+    if (!req.user || !req.user.email || !adminEmail) {
+      return res.status(400).json({ error: "User email is required to send geofence event email" });
+    }
+    await sendGeofenceEventEmail(eventType, payload, req.user.email, adminEmail);
 
     res.status(200).json({ message: `Queued ${eventType} event`, payload });
 
@@ -258,7 +285,7 @@ export const logLocation = async (req: Request, res: Response) => {
 };
 
 export const GeofenceDetails = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
      try {
     const userId = req.user?.id; // from auth middleware
 
@@ -294,7 +321,7 @@ export const GeofenceDetails = async (req: Request, res: Response) => {
   }
 }
 export const getLocationHistory = async (req: Request, res: Response) => {
-     const prisma = new PrismaClient();
+     const prisma = new PrismaClient().$extends(withAccelerate());
     const userId = req.user?.id; // Assuming user ID is set in req.user
     if (!userId) {
         return res.status(400).json({ error: 'User ID is required' });

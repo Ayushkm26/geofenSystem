@@ -45,7 +45,6 @@ export function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: 
     return distance;
 }
  export async function checkIfInsideAnyFence(lat: number, lon: number) {
-    console.log("user lat: ",lat, "user long:",lon);
     const prisma = new PrismaClient();
     const geofences = await prisma.geoFenceArea.findMany({
         select: {
@@ -67,11 +66,9 @@ export function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: 
             fence.latitude,
             fence.longitude
         );
-        console.log("geofen lat:", fence.latitude, "geofen long:", fence.longitude, "distance:", distance);
         if (fence.radius !== null && distance <= fence.radius) {
             insideFences.push({ id: String(fence.id), name: fence.name, distance, lat, lon });
         }
-        console.log("insideFences:", insideFences);
     });
 
     return insideFences;

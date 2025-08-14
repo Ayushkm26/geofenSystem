@@ -1,4 +1,0 @@
--- AlterTable
-ALTER TABLE "public"."Location" ADD COLUMN     "isDisconnected" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "locationSharingTime" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ALTER COLUMN "inTime" DROP NOT NULL;

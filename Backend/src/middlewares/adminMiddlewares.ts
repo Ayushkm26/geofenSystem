@@ -57,7 +57,6 @@ export async function authAdminMiddleware(req: Request, res: Response, next: Nex
 
     // attach admin info
     req.admin = { id: payload.sub };
-    console.log(payload.sub);
     next();
   } catch (err) {
     return res.status(401).json({error: "Invalid token"});

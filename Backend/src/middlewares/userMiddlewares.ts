@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { isTokenValid } from "../auth/token";
 
-// Extend Express Request interface to include 'user'
 declare global {
   namespace Express {
     interface Request {
@@ -21,7 +20,6 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
     let payload;
     try {
       payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as { sub: string; role?: string; email?: string };
-      console.log(payload.role);
       if (payload.role !== "USER") {
         return res.status(403).json({ error: "Not authorized to log out user" });
       }
@@ -59,7 +57,6 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
     if (!ok) return res.status(401).json({ error: "Token revoked or expired" });
 
     req.user = { id: payload.sub , role: payload.role ,email: payload.email };
-    console.log(payload.email);
     next();
   } catch (err) {
     return res.status(401).json({error: "Invalid token"});

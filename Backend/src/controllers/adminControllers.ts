@@ -3,12 +3,12 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { persistToken, revokeToken, signAccessToken, signRefreshToken } from "../auth/token";
 import { createGeofenceArea } from "../utils/geoFenceArea";
+import { withAccelerate } from "@prisma/extension-accelerate";
 
 export const createAdmin = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });    
@@ -42,7 +42,7 @@ export const createAdmin = async (req: Request, res: Response) => {
     }
 }
 export const loginAdmin = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -98,7 +98,7 @@ export const logoutAdmin = async (req: Request, res: Response) => {
   }
 }
 export const addGeofence = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -136,7 +136,7 @@ res.status(201).json({ message: 'Geofence added successfully', geofence });
     }
 }
 export const deleteGeofence = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     try {
         const { id } = req.params;
         if (!id) {
@@ -153,16 +153,31 @@ export const deleteGeofence = async (req: Request, res: Response) => {
     }
 }
 export const getGeofences = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     try {
         const geofences = await prisma.geoFenceArea.findMany({
             select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+            radius: true,
+            type: true,
+            createdAt: true,
+            
+            UserGeofence: {
+                select: {
                 id: true,
-                name: true,
-                latitude: true,
-                longitude: true,
-                radius: true,
-                createdBy: true
+                userId: true,
+                user: {
+                    select: {
+                    id: true,
+                    name: true,
+                    email: true
+                    }
+                }
+                }
+            }
             }
         });
         res.status(200).json({ geofences });
@@ -171,7 +186,7 @@ export const getGeofences = async (req: Request, res: Response) => {
     }
 }
 export const getGeofenceDetails = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     try {
         const { id } = req.params;
         if (!id) {
@@ -202,7 +217,7 @@ export const getGeofenceDetails = async (req: Request, res: Response) => {
     }
 }
 export const updateGeofence = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient();
+    const prisma = new PrismaClient().$extends(withAccelerate());
     try {
         const { id } = req.params;
         const { name, longitude, latitude, radius } = req.body;
