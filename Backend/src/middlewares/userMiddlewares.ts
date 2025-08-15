@@ -55,7 +55,6 @@ export async function authUserMiddleware(req: Request, res: Response, next: Next
 
     const ok = await isTokenValid(token, "ACCESS");
     if (!ok) return res.status(401).json({ error: "Token revoked or expired" });
-
     req.user = { id: payload.sub , role: payload.role ,email: payload.email };
     next();
   } catch (err) {
