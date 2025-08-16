@@ -146,7 +146,7 @@ function UserLoginPage() {
       </div>
 
       {/* Footer */}
-      <Footer />
+      
     </div>
   );
 }

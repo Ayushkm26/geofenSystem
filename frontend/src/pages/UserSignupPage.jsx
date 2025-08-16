@@ -158,7 +158,7 @@ export default function UserSignupPage() {
       </div>
 
       {/* Footer */}
-      <Footer />
+    
     </div>
   );
 }
