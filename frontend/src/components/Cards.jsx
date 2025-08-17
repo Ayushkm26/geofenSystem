@@ -7,7 +7,6 @@ function Cards( { isShared, setIsShared }) {
   const [socket, setSocket] = useState(null);
   const [intervalId, setIntervalId] = useState(null);
   const [outside, setOutside] = useState(false);
-
   const { geofenceLocation, setGeofenceLocation } = useContext(LocationContext);
 
   // Initialize socket once

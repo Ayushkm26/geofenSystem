@@ -1,21 +1,13 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { UserDataContext, LocationContext } from "../Context/UserContext";
-
-const DashboardHeader = ({ type , isShared, setIsShared }) => {
-  const [connected, setConnected] = useState(false);
-  const { geofenceLocation } = useContext(LocationContext);
+import { UserDataContext} from "../Context/UserContext";
+import {LocationContext} from "../Context/UserContext";
+const DashboardHeader = ({ type }) => {
   const { user } = useContext(UserDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const avatarRef = useRef(null);
+  const { isShared, setIsShared } = useContext(LocationContext);
 
-  // ✅ Fix infinite re-render by using useEffect
-  useEffect(() => {
-    if (geofenceLocation?.id) {
-      setConnected(true);
-    } else {
-      setConnected(false);
-    }
-  }, [geofenceLocation]);
+ 
 
   useEffect(() => {
     const handleClickOutside = (event) => {

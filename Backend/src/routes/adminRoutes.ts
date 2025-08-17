@@ -2,6 +2,8 @@ import { Router } from "express";
 import { createAdmin, loginAdmin,logoutAdmin,addGeofence,deleteGeofence,getGeofenceDetails ,updateGeofence,getGeofences} from "../controllers/adminControllers";
 import { authAdminMiddleware } from "../middlewares/adminMiddlewares";
 import { body } from 'express-validator';
+import { verify } from "crypto";
+import { verifyTokenforAdmin } from "../controllers/adminControllers";
 const router = Router();
 router.post("/register", [
     body("name").isLength({ min: 3 }).withMessage('Name is required'),
@@ -18,4 +20,5 @@ router.delete("/deleteGeofence/:id", authAdminMiddleware, deleteGeofence);
 router.get("/getGeofences", authAdminMiddleware, getGeofences);
 router.get("/getGeofence/:id", authAdminMiddleware, getGeofenceDetails);
 router.put("/updateGeofence/:id", authAdminMiddleware, updateGeofence);
+router.get("/verify-token", authAdminMiddleware, verifyTokenforAdmin);
 export default router;

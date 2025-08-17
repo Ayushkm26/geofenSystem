@@ -6,6 +6,8 @@ import bcrypt from 'bcryptjs';
 import { persistToken, revokeToken, signAccessToken, signRefreshToken } from "../auth/token";
 import { createGeofenceArea } from "../utils/geoFenceArea";
 import { withAccelerate } from "@prisma/extension-accelerate";
+import { verifyToken } from "./userControllers";
+import { prisma } from "../server";
 
 export const createAdmin = async (req: Request, res: Response) => {
     const prisma = new PrismaClient().$extends(withAccelerate());
@@ -247,5 +249,23 @@ export const updateGeofence = async (req: Request, res: Response) => {
         res.status(200).json({ message: 'Geofence updated successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to update geofence' });
+    }
+}
+export const verifyTokenforAdmin = async (req: Request, res: Response) => {
+     try {
+        const adminId = req.admin?.id;
+        if (!adminId) return res.status(401).json({ error: "Unauthorized" });
+
+        const adminDetails = await prisma.admin.findUnique({
+            where: { id: adminId },
+            select: { id: true, name: true, email: true, role: true }
+        });
+
+        if (!adminDetails) return res.status(404).json({ error: "Admin not found" });
+
+        res.status(200).json({ adminDetails });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to verify token" });
     }
 }

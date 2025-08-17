@@ -7,13 +7,15 @@ import GeofenceCard from '../components/GeofenceCard';
 import LocationHistoryCard from '../components/LocationHistoryCard';
 import StatsCard from '../components/Statscard';
 import { motion } from 'framer-motion';
+import { LocationContext } from '../Context/UserContext';
 
-function Dashboard({ isShared, setIsShared }) {
+function Dashboard() {
   const { user } = useContext(UserDataContext);
+  const { isShared, setIsShared } = useContext(LocationContext);
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DashboardHeader type="dashboard" isShared={isShared} setIsShared={setIsShared} />
+      <DashboardHeader type="dashboard" />
 
       {/* Dashboard heading */}
       <div className="container mx-auto px-4 py-8 text-left">

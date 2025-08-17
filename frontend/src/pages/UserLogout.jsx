@@ -27,9 +27,10 @@ const UserLogout = () => {
                     console.warn("Token was already blacklisted.");
                 }
             } finally {
-                localStorage.removeItem('token'); 
-                navigate('/userlogin');  
-                toast.success("Logout successful!",{
+                localStorage.clear();
+
+                navigate('/userlogin');
+                toast.success("Logout successful!", {
                     position: "bottom-center"
                 });
                }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserDataContext } from "../Context/UserContext";
 
 import axios from 'axios';
+import { Spinner } from '../components/Spinner';
 
 const UserProtectedWrapper = ({ children }) => {
     const token = localStorage.getItem("token");
@@ -44,7 +45,11 @@ const UserProtectedWrapper = ({ children }) => {
         verifyToken();
     }, [token, navigate]);
 
-    if (loading) return null; // Optional: add spinner if needed
+    if (loading) return (
+        <div className="flex items-center justify-center h-screen"> 
+            <Spinner />
+        </div>
+    );
 
     return <>{children}</>;
 };
