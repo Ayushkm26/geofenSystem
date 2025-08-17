@@ -12,6 +12,7 @@ import AdminLoginPage from './pages/AdminLoginPage';
 import AdminSignupPage from './pages/AdminSignupPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProtectedWrapper from './pages/AdminProtectedWrapper';
+import AdminLogout from './pages/AdminLogout';
 function App() {
 
   return (
@@ -27,6 +28,7 @@ function App() {
       <Route path="/adminlogin" element={<AdminLoginPage />} />
       <Route path="/adminsignup" element={<AdminSignupPage />} />
       <Route path="/admindashboard" element={<AdminProtectedWrapper><AdminDashboard /></AdminProtectedWrapper>} />
+      <Route path="/adminlogout" element={<AdminProtectedWrapper><AdminLogout /></AdminProtectedWrapper>} />
    </Routes>
    </>
   )

@@ -15,7 +15,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DashboardHeader type="dashboard" />
+      <DashboardHeader type="user" />
 
       {/* Dashboard heading */}
       <div className="container mx-auto px-4 py-8 text-left">

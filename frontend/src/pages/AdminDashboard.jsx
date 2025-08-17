@@ -1,20 +1,19 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
-import Headers from '../components/Headers';
-import { useContext } from 'react';
-import { AdminDataContext } from '../Context/AdminContex'; // Importing AdminDataContext
 
+import { useContext } from 'react';
+import { AdminDataContext } from '../Context/AdminContex'; 
+import AdminHeader from '../components/AdminHeader';
+import Footer from '../components/Footers';
 function AdminDashboard() {
-  const { admin } = useContext(AdminDataContext); // Accessing admin data from context
+  const { admin } = useContext(AdminDataContext); 
 
   return (
-    <><h1>Admin Dashboard</h1>
-    <p>Welcome to the admin dashboard. Here you can manage users, view reports, and configure settings.</p>
-    <div className="admin-info">
-      <h2>Admin Information</h2>
-      <p><strong>Name:</strong> {admin.name}</p>
-      <p><strong>Email:</strong> {admin.email}</p>
-    </div>
+    <>
+    <AdminHeader />
+    <div className="container mx-auto px-3 py-8 text-left">
+        <h1 className="text-3xl font-bold mb-6"> Admin Dashboard</h1>
+        <p className="text-gray-700 font-bold mb-1">Welcome {admin.name}!</p>
+      </div>
+    <Footer />
     </>
   )
 }

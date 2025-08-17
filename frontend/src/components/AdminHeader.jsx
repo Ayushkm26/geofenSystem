@@ -1,13 +1,9 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { UserDataContext} from "../Context/UserContext";
-import {LocationContext} from "../Context/UserContext";
-const DashboardHeader = ({ type }) => {
-  const { user } = useContext(UserDataContext);
+import { AdminDataContext } from "../Context/AdminContex";                                                             
+const AdminHeader = () => {
+  const { admin } = useContext(AdminDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const avatarRef = useRef(null);
-  const { isShared, setIsShared } = useContext(LocationContext);
-
- 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -24,7 +20,7 @@ const DashboardHeader = ({ type }) => {
       <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full">
         <div className="flex justify-between px-10">
           {/* Left Side: Logo */}
-          <a href={"/userdashboard"} className="flex justify-center">
+          <a href={"/admindashboard"} className="flex justify-center">
             <img
               src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
               className="h-10 sm:h-10"
@@ -37,20 +33,8 @@ const DashboardHeader = ({ type }) => {
 
           
                 <div className="flex items-center space-x-4 relative">
-                <p
-                  className={`py-2 px-4 text-gray-800 font-bold rounded flex items-center
-                  ${isShared ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
-                >
-                  <img
-                  className="inline-block h-6 w-6 mr-1"
-                  src={
-                    isShared
-                    ? "https://png.pngtree.com/template/20190725/ourmid/pngtree-location-icon-point-green-square-image_282641.jpg"
-                    : "https://cdn4.iconfinder.com/data/icons/maps-and-location-vol-2/24/_block-512.png"
-                  }
-                  alt="status"
-                  />
-                  {isShared ? "Connected" : "Disconnected"}
+                <p>
+                    <strong className="text-gray-800 font-bold mr-2">Free</strong> 
                 </p>
 
                 {/* Avatar */}
@@ -59,7 +43,7 @@ const DashboardHeader = ({ type }) => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center justify-center h-10 w-10 text-2xl bg-white font-bold text-black rounded-full cursor-pointer focus:outline-none"
               >
-                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                {admin?.name ? admin.name.charAt(0).toUpperCase() : "A"}
               </button>
 
               {/* Dropdown */}
@@ -71,19 +55,19 @@ const DashboardHeader = ({ type }) => {
                 }`}
               >
                 <div className="px-4 py-3 text-sm text-gray-900">
-                  <div>{user?.name}</div>
-                  <div className="font-medium truncate">{user?.email}</div>
+                  <div>{admin?.name}</div>
+                  <div className="font-medium truncate">{admin?.email}</div>
                 </div>
 
                 <ul className="py-2 text-sm text-gray-700">
                   <li>
-                    <a href="/userdashboard" className="block px-4 py-2 font-medium hover:bg-gray-100">
-                      Message Admin
+                    <a href="/admindashboard" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      Message Users
                     </a>
                   </li>
                   <li>
                     <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
-                      Resync
+                      Resync Data
                     </a>
                   </li>
                   <li>
@@ -95,7 +79,7 @@ const DashboardHeader = ({ type }) => {
 
                 <div className="py-2">
                   <a
-                    href={type === "dashboard" ? "/userlogout" : "/userlogin"}
+                    href={"/adminlogout"}
                     className="block px-4 py-2 font-medium text-sm text-gray-700 hover:bg-gray-100"
                   >
                     Logout
@@ -110,4 +94,4 @@ const DashboardHeader = ({ type }) => {
   );
 };
 
-export default DashboardHeader;
+export default AdminHeader;
