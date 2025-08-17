@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { UserDataContext, LocationContext } from "../Context/UserContext";
 
-const DashboardHeader = ({ type }) => {
+const DashboardHeader = ({ type , isShared, setIsShared }) => {
   const [connected, setConnected] = useState(false);
   const { geofenceLocation } = useContext(LocationContext);
   const { user } = useContext(UserDataContext);
@@ -43,21 +43,25 @@ const DashboardHeader = ({ type }) => {
             </span>
           </a>
 
-          {/* Right Side */}
-          <div className="flex items-center space-x-4 relative">
-            <p
-              className={`py-2 px-4 text-gray-800 font-bold rounded flex items-center
-                ${connected ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
-            >
-              <img
-                className="inline-block h-6 w-6 mr-1"
-                src="https://cdn4.iconfinder.com/data/icons/maps-and-location-vol-2/24/_block-512.png"
-                alt="status"
-              />
-              {connected ? "Connected" : "Disconnected"}
-            </p>
+          
+                <div className="flex items-center space-x-4 relative">
+                <p
+                  className={`py-2 px-4 text-gray-800 font-bold rounded flex items-center
+                  ${isShared ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
+                >
+                  <img
+                  className="inline-block h-6 w-6 mr-1"
+                  src={
+                    isShared
+                    ? "https://png.pngtree.com/template/20190725/ourmid/pngtree-location-icon-point-green-square-image_282641.jpg"
+                    : "https://cdn4.iconfinder.com/data/icons/maps-and-location-vol-2/24/_block-512.png"
+                  }
+                  alt="status"
+                  />
+                  {isShared ? "Connected" : "Disconnected"}
+                </p>
 
-            {/* Avatar */}
+                {/* Avatar */}
             <div ref={avatarRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}

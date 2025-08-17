@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { io } from "socket.io-client";
 import { LocationContext } from "../Context/UserContext"; // adjust path
 
-function Cards() {
+function Cards( { isShared, setIsShared }) {
   const [isSharing, setIsSharing] = useState(false);
   const [socket, setSocket] = useState(null);
   const [intervalId, setIntervalId] = useState(null);
@@ -110,22 +110,30 @@ useEffect(() => {
       {/* ✅ Show outside message */}
       
       <div className="flex justify-center items-center mt-3">
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 mr-3 disabled:opacity-50"
-          onClick={() => setIsSharing(true)}
-          disabled={isSharing}
-        >
-          Start sharing
-        </button>
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 ml-3 disabled:opacity-50"
-          onClick={() => setIsSharing(false)}
-          disabled={!isSharing}
-        >
-          Stop sharing
-        </button>
+       <button
+  type="button"
+  className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 mr-3 disabled:opacity-50"
+  onClick={() => {
+    setIsSharing(true);
+    setIsShared(true);
+  }}
+  disabled={isSharing}
+>
+  Start sharing
+</button>
+
+<button
+  type="button"
+  className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 ml-3 disabled:opacity-50"
+  onClick={() => {
+    setIsSharing(false);
+    setIsShared(false);
+  }}
+  disabled={!isSharing}
+>
+  Stop sharing
+</button>
+
       </div>
     </div>
   );

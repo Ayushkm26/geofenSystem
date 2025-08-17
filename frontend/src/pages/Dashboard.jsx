@@ -8,13 +8,13 @@ import LocationHistoryCard from '../components/LocationHistoryCard';
 import StatsCard from '../components/Statscard';
 import { motion } from 'framer-motion';
 
-function Dashboard() {
+function Dashboard({ isShared, setIsShared }) {
   const { user } = useContext(UserDataContext);
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DashboardHeader type="dashboard" />
-      
+      <DashboardHeader type="dashboard" isShared={isShared} setIsShared={setIsShared} />
+
       {/* Dashboard heading */}
       <div className="container mx-auto px-4 py-8 text-left">
         <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
@@ -24,7 +24,7 @@ function Dashboard() {
       {/* Cards Section */}
       <div className="flex-1 flex flex-col items-center justify-center px-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 place-items-center">
-          <Cards />
+          <Cards isShared={isShared} setIsShared={setIsShared} />
           <GeofenceCard />
         </div>
 
