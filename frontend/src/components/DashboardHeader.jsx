@@ -1,12 +1,21 @@
-import React, { useState, useRef, useEffect } from "react";
-import { UserDataContext } from "../Context/UserContext";
-import { useContext } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
+import { UserDataContext, LocationContext } from "../Context/UserContext";
 
 const DashboardHeader = ({ type }) => {
-    const { user } = useContext(UserDataContext);
-    console.log("User in DashboardHeader:", user, user.email);
+  const [connected, setConnected] = useState(false);
+  const { geofenceLocation } = useContext(LocationContext);
+  const { user } = useContext(UserDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const avatarRef = useRef(null);
+
+  // ✅ Fix infinite re-render by using useEffect
+  useEffect(() => {
+    if (geofenceLocation?.id) {
+      setConnected(true);
+    } else {
+      setConnected(false);
+    }
+  }, [geofenceLocation]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -23,7 +32,7 @@ const DashboardHeader = ({ type }) => {
       <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full">
         <div className="flex justify-between px-10">
           {/* Left Side: Logo */}
-          <a href="#" className="flex justify-center">
+          <a href="/userdashboard" className="flex justify-center">
             <img
               src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
               className="h-10 sm:h-10"
@@ -34,28 +43,30 @@ const DashboardHeader = ({ type }) => {
             </span>
           </a>
 
-          {/* Right Side: Logout/Signup + Avatar */}
+          {/* Right Side */}
           <div className="flex items-center space-x-4 relative">
-           
-              
-              <p className="py-2 px-4 text-gray-800 font-bold bg-primary-700 hover:bg-red-400 hover:text-black rounded bg-gray-200 hover:bg-primary-800"
-                > <img  className="inline-block  h-6 w-6 mr-1" src="https://cdn4.iconfinder.com/data/icons/maps-and-location-vol-2/24/_block-512.png"/>
-                Disconnected
-                </p>
-            
+            <p
+              className={`py-2 px-4 text-gray-800 font-bold rounded flex items-center
+                ${connected ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
+            >
+              <img
+                className="inline-block h-6 w-6 mr-1"
+                src="https://cdn4.iconfinder.com/data/icons/maps-and-location-vol-2/24/_block-512.png"
+                alt="status"
+              />
+              {connected ? "Connected" : "Disconnected"}
+            </p>
 
-            {/* Avatar Button */}
+            {/* Avatar */}
             <div ref={avatarRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center justify-center h-10 w-10 text-2xl bg-white font-bold text-black rounded-full cursor-pointer focus:outline-none"
               >
-                {user && user.name ? user.name.charAt(0).toUpperCase() : "U"}
-               
-                 
+                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown */}
               <div
                 className={`absolute right-0 top-full mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-sm z-50 transition-all duration-200 transform ${
                   dropdownOpen
@@ -63,41 +74,29 @@ const DashboardHeader = ({ type }) => {
                     : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
                 }`}
               >
-                {/* User Info */}
                 <div className="px-4 py-3 text-sm text-gray-900">
-                  <div>{user.name}</div>
-                  <div className="font-medium truncate">{user.email}</div>
+                  <div>{user?.name}</div>
+                  <div className="font-medium truncate">{user?.email}</div>
                 </div>
 
-                {/* Links */}
-                <ul className="py-2 text-sm text-gray-700" aria-labelledby="dropdownInformationButton">
+                <ul className="py-2 text-sm text-gray-700">
                   <li>
-                    <a
-                      href="/userdashboard"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
-                    >
+                    <a href="/userdashboard" className="block px-4 py-2 font-medium hover:bg-gray-100">
                       Message Admin
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
-                    >
+                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
                       Resync
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
-                    >
+                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
                       Help
                     </a>
                   </li>
                 </ul>
 
-                {/* Sign Out */}
                 <div className="py-2">
                   <a
                     href={type === "dashboard" ? "/userlogout" : "/userlogin"}

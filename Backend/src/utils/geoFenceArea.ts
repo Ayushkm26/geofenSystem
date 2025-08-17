@@ -43,6 +43,7 @@ export function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     return distance;
+    
 }
  export async function checkIfInsideAnyFence(lat: number, lon: number) {
     const prisma = new PrismaClient();
@@ -69,8 +70,9 @@ export function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: 
         if (fence.radius !== null && distance <= fence.radius) {
             insideFences.push({ id: String(fence.id), name: fence.name, distance, lat, lon });
         }
+        
     });
-
+     console.log(insideFences);
     return insideFences;
 }
 

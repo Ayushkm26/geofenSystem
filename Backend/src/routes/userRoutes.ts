@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {createUser} from "../controllers/userControllers";
-import { loginUser, logoutUser,logLocation ,GeofenceDetails, getLocationHistory} from "../controllers/userControllers";
+import { loginUser, logoutUser, getLocationHistory} from "../controllers/userControllers";
 import { authUserMiddleware } from "../middlewares/userMiddlewares";
 import { body } from 'express-validator';
 import {verifyToken}  from "../controllers/userControllers";
@@ -20,8 +20,9 @@ router.post("/login",[
 ], loginUser);
 router.get('/logout', authUserMiddleware, logoutUser);
 router.get("/verify-token", authUserMiddleware, verifyToken);
-router.post("/logLocation",authUserMiddleware,logLocation)
-router.get("/geofenceDetails", authUserMiddleware, GeofenceDetails);
+
+// router.get("/geofenceDetails", authUserMiddleware, emitGeofenceDetails);
+// TODO: Implement an Express-compatible handler for geofence details if needed.
 router.get("/locationHistory" ,authUserMiddleware,getLocationHistory)
 
 export default router;
