@@ -155,38 +155,50 @@ export const deleteGeofence = async (req: Request, res: Response) => {
     }
 }
 export const getGeofences = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient().$extends(withAccelerate());
-    try {
-        const geofences = await prisma.geoFenceArea.findMany({
-            select: {
-            id: true,
-            name: true,
-            latitude: true,
-            longitude: true,
-            radius: true,
-            type: true,
-            createdAt: true,
-            
-            UserGeofence: {
-                select: {
-                id: true,
-                userId: true,
-                user: {
-                    select: {
-                    id: true,
-                    name: true,
-                    email: true
-                    }
-                }
-                }
-            }
-            }
-        });
-        res.status(200).json({ geofences });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to retrieve geofences' });
+  const prisma = new PrismaClient().$extends(withAccelerate());
+
+  try {
+    // assuming you store admin info in req.user (from auth middleware)
+    const adminId = req.admin?.id;  
+
+    if (!adminId) {
+      return res.status(401).json({ error: "Unauthorized: Admin not found" });
     }
-}
+
+    const geofences = await prisma.geoFenceArea.findMany({
+      where: { createdBy: adminId }, // ✅ filter only geofences of this admin
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        radius: true,
+        type: true,
+        createdAt: true,
+
+        UserGeofence: {
+          select: {
+            id: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ geofences });
+  } catch (error) {
+    console.error("Error fetching admin geofences:", error);
+    res.status(500).json({ error: "Failed to retrieve geofences" });
+  }
+};
+
 export const getGeofenceDetails = async (req: Request, res: Response) => {
     const prisma = new PrismaClient().$extends(withAccelerate());
     try {

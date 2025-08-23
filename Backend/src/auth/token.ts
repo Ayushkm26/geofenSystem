@@ -19,7 +19,6 @@ export function signRefreshToken(payload: object) {
   return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "7d" });
 }
 
-/** Save (hashed) token to DB with TTL */
 export async function persistToken(token: string, userId: string, type: "ACCESS"|"REFRESH", expiresAt: Date) {
   const hashed = hashToken(token);
   return prisma.jwtToken.create({
