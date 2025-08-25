@@ -115,7 +115,7 @@ export default function LocationHistory() {
   useEffect(() => {
     const fetchVisits = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/users/locationHistory", {
+        const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/users/locationHistory`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
         setVisits(Array.isArray(res.data) ? res.data : []);
