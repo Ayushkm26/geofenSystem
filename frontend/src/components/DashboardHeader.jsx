@@ -20,31 +20,35 @@ const DashboardHeader = ({ type }) => {
   return (
     <header>
       <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full">
-        <div className="flex justify-between px-10 items-center">
-          {/* Left Side: Logo */}
-          <a href="/userdashboard" className="flex items-center">
+        <div className="flex justify-between items-center px-4 lg:px-10">
+          {/* Logo on the left */}
+          <a href={"/userdashboard"} className="flex items-center">
             <img
               src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
-              className="h-10 sm:h-10"
+              className="h-8 sm:h-10" // smaller on mobile
               alt="Logo"
             />
-            <span className="ml-2 text-xl font-semibold text-gray-800">
+            <span className="text-lg sm:text-xl font-semibold text-gray-800 ml-2">
               GeoFence System
             </span>
           </a>
 
-          {/* Right Side */}
-          <div className="flex items-center space-x-4">
-            {/* Desktop: Full Connected/Disconnected Button */}
-            <p
-              className={`hidden sm:flex py-2 px-4 text-gray-800 font-bold rounded items-center ${
-                isShared
-                  ? "bg-green-500 hover:bg-gray-300"
-                  : "bg-red-500 hover:bg-gray-300"
+          {/* Right: dot + avatar */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Mobile: dot only */}
+            <span
+              className={`block sm:hidden h-3 w-3 rounded-full ${
+                isShared ? "bg-green-500" : "bg-red-500"
               }`}
+            ></span>
+
+            {/* Desktop: full connected/disconnected */}
+            <p
+              className={`hidden sm:flex py-1 px-3 text-gray-800 font-bold rounded items-center
+              ${isShared ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
             >
               <img
-                className="inline-block h-6 w-6 mr-1"
+                className="inline-block h-5 w-5 mr-1"
                 src={
                   isShared
                     ? "https://png.pngtree.com/template/20190725/ourmid/pngtree-location-icon-point-green-square-image_282641.jpg"
@@ -55,18 +59,11 @@ const DashboardHeader = ({ type }) => {
               {isShared ? "Connected" : "Disconnected"}
             </p>
 
-            {/* Mobile: Just a colored dot */}
-            <span
-              className={`block sm:hidden h-4 w-4 rounded-full ${
-                isShared ? "bg-green-500" : "bg-red-500"
-              }`}
-            ></span>
-
             {/* Avatar */}
             <div ref={avatarRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-center h-10 w-10 text-2xl bg-white font-bold text-black rounded-full cursor-pointer focus:outline-none"
+                className="flex items-center justify-center h-8 w-8 sm:h-10 sm:w-10 text-lg sm:text-2xl bg-white font-bold text-black rounded-full cursor-pointer focus:outline-none"
               >
                 {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
               </button>
@@ -94,18 +91,12 @@ const DashboardHeader = ({ type }) => {
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
-                    >
+                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
                       Resync
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
-                    >
+                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
                       Help
                     </a>
                   </li>
