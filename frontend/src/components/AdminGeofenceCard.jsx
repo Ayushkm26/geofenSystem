@@ -15,12 +15,6 @@ import {
   Globe
 } from 'lucide-react';
 
-// Sidebar Component
-
-
-// StatCard Component
-
-
 // GeofenceCard Component
 const AdminGeofenceCard = ({ geofence, onEdit, onDelete }) => (
   <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -60,15 +54,15 @@ const AdminGeofenceCard = ({ geofence, onEdit, onDelete }) => (
       </div>
       <div>
         <p className="text-sm text-gray-600">Active Users</p>
-        <p className="font-medium">{geofence.UserGeofence.length}</p>
+        <p className="font-medium">{geofence.UserGeofence?.length || 0}</p>
       </div>
     </div>
 
-    {geofence.UserGeofence.length > 0 && (
+    {(geofence.UserGeofence?.length || 0) > 0 && (
       <div>
         <p className="text-sm text-gray-600 mb-2">Assigned Users:</p>
         <div className="flex flex-wrap gap-2">
-          {geofence.UserGeofence.slice(0, 3).map((userGeo) => (
+          {geofence.UserGeofence?.slice(0, 3).map((userGeo) => (
             <span key={userGeo.id} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
               {userGeo.user.name}
             </span>
@@ -83,4 +77,5 @@ const AdminGeofenceCard = ({ geofence, onEdit, onDelete }) => (
     )}
   </div>
 );
+
 export default AdminGeofenceCard;

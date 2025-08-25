@@ -1,3 +1,4 @@
+// AdminDashboard.jsx
 import AdminHeader from '../components/AdminHeader';
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
@@ -6,78 +7,119 @@ import GeofencesManagement from '../components/GeofenceManagement';
 import UsersManagement from '../components/UserManagement';
 import Statistics from '../components/Statistics';
 import CreateGeofence from '../components/CreateGeofence';
+import { io } from 'socket.io-client';
 
+const SOCKET_URL = `${import.meta.env.VITE_BASE_URL}/admin`;
 
-
-
-// Main Admin Dashboard Component
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mock data - replace with API calls
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [geofences, setGeofences] = useState([]);
   const [dashboardData, setDashboardData] = useState({
-    totalGeofences: 12,
-    activeUsers: 48,
-    totalAdmins: 3,
-    recentActivities: 15
-    
+    totalGeofences: 0,
+    activeUsers: 0,
+    totalAdmins: 1,
+    recentActivities: 0,
   });
+  const [socket, setSocket] = useState(null);
+  const [socketStatus, setSocketStatus] = useState('disconnected');
 
-  const [geofences, setGeofences] = useState([
-    {
-      id: '1',
-      name: 'Office Campus',
-      latitude: 40.7128,
-      longitude: -74.0060,
-      radius: 500,
-      type: 'Point',
-      createdAt: '2024-01-15',
-      UserGeofence: [
-        { id: '1', userId: 'u1', user: { id: 'u1', name: 'John Doe', email: 'john@example.com' }},
-        { id: '2', userId: 'u2', user: { id: 'u2', name: 'Jane Smith', email: 'jane@example.com' }}
-      ]
-    },
-    {
-      id: '2',
-      name: 'Warehouse District',
-      latitude: 40.7589,
-      longitude: -73.9851,
-      radius: 750,
-      type: 'Point',
-      createdAt: '2024-01-20',
-      UserGeofence: [
-        { id: '3', userId: 'u3', user: { id: 'u3', name: 'Mike Johnson', email: 'mike@example.com' }}
-      ]
-    },
-    {
-      id: '3',
-      name: 'Retail Zone',
-      latitude: 40.7505,
-      longitude: -73.9934,
-      radius: 300,
-      type: 'Point',
-      createdAt: '2024-02-01',
-      UserGeofence: []
+  // Initialize socket connection
+  useEffect(() => {
+    if (!SOCKET_URL) {
+      console.error('SOCKET_URL is not defined!');
+      return;
     }
-  ]);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error('No token found!');
+      return;
+    }
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      path: '/api/socket.io',
+      auth: { token },
+      timeout: 20000, // 20 seconds
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
 
-  // Event handlers
-  const handleAddGeofence = () => {
-    console.log('Add geofence clicked');
-    // Implement add geofence logic
+    setSocket(newSocket);
+
+    // Connection events
+    newSocket.on('connect', () => {
+      console.log('Connected to Admin Socket:', newSocket.id);
+      setSocketStatus('connected');
+      newSocket.emit('get-geofences'); // fetch initial geofences
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connect_error:', err);
+      setSocketStatus('error');
+    });
+
+    newSocket.on('connect_timeout', () => {
+      console.warn('Socket connect_timeout');
+      setSocketStatus('timeout');
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      setSocketStatus('disconnected');
+    });
+
+    // Geofence events
+    newSocket.on('geofences-list', (list) => {
+      console.log('Received geofences:', list);
+      setGeofences(list);
+      setDashboardData((prev) => ({ ...prev, totalGeofences: list.length, activeUsers: list.reduce((acc, g) => acc + (g.UserGeofence?.length || 0), 0) }));
+    });
+
+  newSocket.on('geofence-added', (newGeofence) => {
+  setGeofences((prev) => [...prev, newGeofence]);
+  setDashboardData((prev) => ({ ...prev, totalGeofences: prev.totalGeofences + 1 }));
+});
+
+newSocket.on('geofence-updated', (updatedGeofence) => {
+  console.log('Geofence updated:', updatedGeofence);
+  setGeofences((prev) =>
+    prev.map((g) => (g.id === updatedGeofence.id ? updatedGeofence : g))
+  );
+});
+
+newSocket.on('geofence-deleted', (deletedId) => {
+  console.log('Geofence deleted:', deletedId);
+  setGeofences((prev) => prev.filter((g) => g.id !== deletedId));
+  setDashboardData((prev) => ({ ...prev, totalGeofences: prev.totalGeofences - 1 }));
+});
+
+    newSocket.on('error', (err) => {
+      console.error('Socket error:', err);
+    });
+
+    return () => newSocket.disconnect();
+  }, []);
+
+  // CRUD handlers
+  const handleAddGeofence = () => setIsCreateModalOpen(true);
+
+  const handleCreateGeofence = (newGeofence) => {
+    if (!socket || socketStatus !== 'connected') return console.error('Socket not connected');
+    socket.emit('add-geofence', newGeofence);
+    setIsCreateModalOpen(false);
   };
 
-  const handleEditGeofence = (geofence) => {
-    console.log('Edit geofence:', geofence);
-    // Implement edit geofence logic
+  const handleEditGeofence = (updatedGeofence) => {
+    if (!socket || socketStatus !== 'connected') return console.error('Socket not connected');
+    socket.emit('update-geofence', updatedGeofence);
   };
 
   const handleDeleteGeofence = (geofenceId) => {
-    console.log('Delete geofence:', geofenceId);
-    // Implement delete geofence logic
-    setGeofences(prev => prev.filter(g => g.id !== geofenceId));
+    if (!socket || socketStatus !== 'connected') return console.error('Socket not connected');
+    socket.emit('delete-geofence', geofenceId);
   };
 
   const renderContent = () => {
@@ -86,7 +128,7 @@ const AdminDashboard = () => {
         return <DashboardOverview dashboardData={dashboardData} geofences={geofences} />;
       case 'geofences':
         return (
-          <GeofencesManagement 
+          <GeofencesManagement
             geofences={geofences}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -99,8 +141,6 @@ const AdminDashboard = () => {
         return <UsersManagement geofences={geofences} />;
       case 'stats':
         return <Statistics />;
-      case 'create':
-        return <CreateGeofence />;
       default:
         return <DashboardOverview dashboardData={dashboardData} geofences={geofences} />;
     }
@@ -108,28 +148,30 @@ const AdminDashboard = () => {
 
   return (
     <>
-    <AdminHeader />
-    <div className="flex h-screen bg-gray-100 border-1">
-      <Sidebar 
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
+      <AdminHeader />
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
+        <div className="flex-1 overflow-auto p-6">
           {renderContent()}
+          <div className="mt-4 text-sm text-gray-500">
+            Socket Status: <span>{socketStatus}</span>
+          </div>
         </div>
       </div>
-    </div>
-    <footer className="bg-white border-t border-gray-200">
-      <div className="max-w-7xl mx-auto py-4 px-6">
-        <p className="text-center text-gray-500 text-sm">
-          &copy; 2024 Geofence Management. All rights reserved.
-        </p>
-      </div>
-    </footer>
+
+      {isCreateModalOpen && (
+        <CreateGeofence
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreate={handleCreateGeofence}
+          socket={socket}
+        />
+      )}
     </>
   );
 };

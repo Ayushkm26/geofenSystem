@@ -10,6 +10,14 @@ import http from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { handleSocketLocationUpdate, handleCurrentGeofenceRequest } from "./controllers/userControllers";
 import { socketAuthMiddleware } from "./middlewares/socketmiddleware";
+import { sendGeofences,
+  addGeofence,
+  updateGeofence,
+  deleteGeofence,
+  getGeofenceDetails
+} from "./controllers/adminControllers";
+import { socketAdminMiddleware } from "./middlewares/socketAdminMiddleware";
+
 
 // Initialize configuration
 dotenv.config();
@@ -37,8 +45,8 @@ const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   path: "/api/socket.io",
   cors: {
-    origin: process.env.CLIENT_URL || "*",
-    methods: ["GET", "POST"],
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   },
   connectionStateRecovery: {
@@ -85,15 +93,75 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Disconnection Handler
+ 
   socket.on("disconnect", (reason) => {
     console.log(`User ${socket.data.user?.id} disconnected: ${reason}`);
   });
 });
 
-// Error Handling
+
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
+});
+
+const adminNamespace = io.of("/admin");
+adminNamespace.use(socketAdminMiddleware);
+adminNamespace.on("connection", (socket) => {
+  console.log(`Admin connected: ${socket.data.admin?.id} (${socket.id})`);
+
+    socket.on("get-geofences", async () => {
+    try {
+      const adminId = socket.data.admin?.id;
+      if (!adminId) return socket.emit("geofences-list", []);
+
+      const geofences = await prisma.geoFenceArea.findMany({
+        where: { createdBy: adminId },
+        select: {
+          id: true,
+          name: true,
+          latitude: true,
+          longitude: true,
+          radius: true,
+          type: true,
+          createdAt: true,
+          coordinates: true,
+          UserGeofence: {
+            select: {
+              id: true,
+              userId: true,
+              user: { select: { id: true, name: true, email: true } }
+            }
+          }
+        }
+      });
+
+      // Send list to the admin socket
+      socket.emit("geofences-list", geofences);
+
+    } catch (error) {
+      console.error("Failed to fetch geofences:", error);
+      socket.emit("error", { message: "Failed to fetch geofences" });
+    }
+  });
+  sendGeofences(socket);
+
+   adminNamespace.on("connection_error", (err) => {
+  console.log("Admin namespace connection error:", err);
+});
+  socket.on("add-geofence", (data) => addGeofence(socket, data));
+
+
+  socket.on("update-geofence", (data) => updateGeofence(socket, data));
+
+  
+  socket.on("delete-geofence", (id) => deleteGeofence(socket, id));
+
+  socket.on("get-geofence-details", (id) => getGeofenceDetails(socket, id));
+
+ 
+  socket.on("disconnect", (reason) => {
+    console.log(`Admin disconnected: ${socket.data.admin?.id} (${reason})`);
+  });
 });
 
 // Start Server

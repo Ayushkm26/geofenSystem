@@ -24,7 +24,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection 
     { id: 'geofences', label: 'Geofences', icon: MapPin },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'stats', label: 'Statistics', icon: TrendingUp },
-    { id: 'create', label: 'Create Geofence', icon: Plus }
+    
   ];
 
   return (

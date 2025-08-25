@@ -1,8 +1,7 @@
-
-
 const UsersManagement = ({ geofences }) => {
-  const allUsers = geofences.flatMap(g => g.UserGeofence);
-  
+  // Safely flatten users; ignore undefined UserGeofence arrays
+  const allUsers = geofences.flatMap(g => g.UserGeofence || []);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
@@ -30,25 +29,35 @@ const UserTable = ({ users, geofences }) => (
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-gray-200">
-        {users.map((userGeo, index) => (
-          <tr key={index} className="hover:bg-gray-50">
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-              {userGeo.user.name}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {userGeo.user.email}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {geofences.filter(g => g.UserGeofence.some(ug => ug.userId === userGeo.userId)).length}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-              <button className="text-red-600 hover:text-red-900">Delete</button>
-            </td>
-          </tr>
-        ))}
+        {users.map((userGeo, index) => {
+          const user = userGeo?.user;
+          if (!user) return null; // skip if user object is missing
+          
+          const userGeofenceCount = geofences.filter(
+            g => g.UserGeofence?.some(ug => ug.userId === userGeo.userId)
+          ).length;
+
+          return (
+            <tr key={index} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {user.name || "Unknown"}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {user.email || "-"}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {userGeofenceCount}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                <button className="text-red-600 hover:text-red-900">Delete</button>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   </div>
 );
+
 export default UsersManagement;

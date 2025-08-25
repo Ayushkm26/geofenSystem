@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAdmin, loginAdmin,logoutAdmin,addGeofence,deleteGeofence,getGeofenceDetails ,updateGeofence,getGeofences} from "../controllers/adminControllers";
+import { addGeofenceHttp, createAdmin, loginAdmin,logoutAdmin} from "../controllers/adminControllers";
 import { authAdminMiddleware } from "../middlewares/adminMiddlewares";
 import { body } from 'express-validator';
 import { verify } from "crypto";
@@ -15,10 +15,10 @@ router.post("/login",[
     body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters long"),   
 ], loginAdmin);
 router.post("/logout", authAdminMiddleware, logoutAdmin);
-router .post("/addGeofence", authAdminMiddleware, addGeofence);
-router.delete("/deleteGeofence/:id", authAdminMiddleware, deleteGeofence);
-router.get("/getGeofences", authAdminMiddleware, getGeofences);
-router.get("/getGeofence/:id", authAdminMiddleware, getGeofenceDetails);
-router.put("/updateGeofence/:id", authAdminMiddleware, updateGeofence);
+router.post("/addGeofence", authAdminMiddleware, addGeofenceHttp);
+// router.delete("/deleteGeofence/:id", authAdminMiddleware, deleteGeofence);
+// router.get("/getGeofences", authAdminMiddleware, getGeofences);
+// router.get("/getGeofence/:id", authAdminMiddleware, getGeofenceDetails);
+// router.put("/updateGeofence/:id", authAdminMiddleware, updateGeofence);
 router.get("/verify-token", authAdminMiddleware, verifyTokenforAdmin);
 export default router;
