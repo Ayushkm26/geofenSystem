@@ -144,7 +144,7 @@ export const addGeofence = async (socket: Socket, data: any) => {
     };
 
     const geofence = await prisma.geoFenceArea.create({ data: geofenceData });
-    socket.nsp.emit("geofence-added", geofence);
+    socket.emit("geofence-added", geofence);
   } catch (err) {
     socket.emit("geofence-error", { error: "Failed to add geofence" });
   }
@@ -178,27 +178,38 @@ export const addGeofenceHttp = async (req: Request, res: Response) => {
 export const updateGeofence = async (socket: Socket, data: any) => {
   try {
     const { id, name, latitude, longitude, radius } = data;
-    const coordinates = createGeofenceArea(longitude, latitude, radius);
-    const geofenceData: any = {
-      name,
-      type: coordinates.type,
-      latitude,
-      longitude,
-      radius,
-      coordinates: JSON.stringify(coordinates),
-      createdBy: socket.data.admin.id,
-    };
+    if (!id) {
+      return socket.emit("geofence-error", { error: "Geofence ID is required" });
+    }
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const rad = parseFloat(radius);
+
+    console.log("Updating geofence:", { id, name, lat, lng, rad });
+
+    const coordinates = createGeofenceArea(lat, lng, rad);
 
     const updated = await prisma.geoFenceArea.update({
       where: { id },
-      data: geofenceData,
+      data: {
+        name,
+        latitude: lat,
+        longitude: lng,
+        radius: rad,
+        type: coordinates.type,
+        coordinates: JSON.stringify(coordinates),
+        createdBy: socket.data.admin.id,
+      },
     });
 
-    socket.nsp.emit("geofence-updated", updated);
+    socket.emit("geofence-updated", updated);
   } catch (err) {
+    console.error("Update error:", err);
     socket.emit("geofence-error", { error: "Failed to update geofence" });
   }
 };
+
 
 // Delete Geofence
 export const deleteGeofence = async (socket: Socket, id: string) => {

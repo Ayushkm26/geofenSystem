@@ -42,7 +42,9 @@ export function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: 
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
+    console.log("Distance calculated:", distance);
     return distance;
+
     
 }
  export async function checkIfInsideAnyFence(lat: number, lon: number) {
