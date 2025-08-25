@@ -129,7 +129,9 @@ export const sendGeofences = async (socket: Socket) => {
 // Add Geofence
 export const addGeofence = async (socket: Socket, data: any) => {
   try {
+    
     const { name, latitude, longitude, radius } = data;
+    console.log(radius)
     const coordinates = createGeofenceArea(longitude, latitude, radius);
     const geofenceData: any = {
       name,
@@ -137,7 +139,7 @@ export const addGeofence = async (socket: Socket, data: any) => {
       latitude,
       longitude,
       radius,
-      coordinates: JSON.stringify(coordinates),
+      coordinates: JSON.stringify(coordinates), 
       createdBy: socket.data.admin.id,
     };
 

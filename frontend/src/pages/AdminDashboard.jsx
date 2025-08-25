@@ -1,4 +1,4 @@
-// AdminDashboard.jsx
+// AdminDashboard.jsxFree
 import AdminHeader from '../components/AdminHeader';
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
@@ -8,6 +8,9 @@ import UsersManagement from '../components/UserManagement';
 import Statistics from '../components/Statistics';
 import CreateGeofence from '../components/CreateGeofence';
 import { io } from 'socket.io-client';
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 
 const SOCKET_URL = `${import.meta.env.VITE_BASE_URL}/admin`;
 
@@ -82,7 +85,17 @@ const AdminDashboard = () => {
   setGeofences((prev) => [...prev, newGeofence]);
   setDashboardData((prev) => ({ ...prev, totalGeofences: prev.totalGeofences + 1 }));
 });
+newSocket.on("user-geofence-event", (data) => {
+  console.log("User Geofence Event:", data);
+   newSocket.emit("get-geofences");
 
+  // Show toast notification
+  toast.info(
+    `${data.userEmail || data.userId} ${data.event} ${data.geofenceName}`,
+    { position: "top-right" }
+  );
+  
+});
 newSocket.on('geofence-updated', (updatedGeofence) => {
   console.log('Geofence updated:', updatedGeofence);
   setGeofences((prev) =>
@@ -172,7 +185,10 @@ newSocket.on('geofence-deleted', (deletedId) => {
           socket={socket}
         />
       )}
+      <ToastContainer position="top-right" autoClose={3000} />
+
     </>
+    
   );
 };
 

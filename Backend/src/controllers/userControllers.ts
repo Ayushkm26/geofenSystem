@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { signAccessToken, signRefreshToken, persistToken, revokeToken } from "../auth/token";
 import { sendGeofenceEventEmail } from "../utils/mail";
 import { Socket } from "socket.io";
-import { prisma } from "../server";
+import { prisma ,io} from "../server";
 
 // Redis client setup
 const redis = createClient({ url: process.env.REDIS_URL });
@@ -206,6 +206,8 @@ export const processLocation = async (
 };
 
 // ─── Handle Live Socket Location Updates ──────────────────────────────────────
+
+
 export const handleSocketLocationUpdate = async (
   socket: Socket,
   data: { latitude: number; longitude: number }
@@ -220,11 +222,33 @@ export const handleSocketLocationUpdate = async (
       data.longitude
     );
 
+    // Always respond back to the user
     socket.emit("location-response", result);
 
     if (result.eventType === "ENTER" || result.eventType === "SWITCH") {
       socket.data.currentGeofence = result.payload.areaDetails;
       socket.emit("geofence-details", result.payload.areaDetails);
+
+      // 🔹 Notify respective admin
+      if (result.payload.areaDetails?.id) {
+        const geofence = await prisma.geoFenceArea.findUnique({
+          where: { id: result.payload.areaDetails.id },
+          select: { id: true, name: true, createdBy: true }
+        });
+
+        if (geofence) {
+          io.of("/admin")
+            .to(`admin:${geofence.createdBy}`)
+            .emit("user-geofence-event", {
+              userId: socket.data.user.id,
+              userEmail: socket.data.user.email,
+              geofenceId: geofence.id,
+              geofenceName: geofence.name,
+              event: result.eventType, // "ENTER" or "SWITCH"
+              timestamp: new Date()
+            });
+        }
+      }
 
     } else if (result.eventType === "EXIT") {
       socket.emit("outside-geofence", {
@@ -233,6 +257,27 @@ export const handleSocketLocationUpdate = async (
         exitedGeofence: result.payload.exitedFence,
       });
       delete socket.data.currentGeofence;
+
+      // 🔹 Notify admin on exit as well
+      if (result.payload.exitedFence?.id) {
+        const geofence = await prisma.geoFenceArea.findUnique({
+          where: { id: result.payload.exitedFence.id },
+          select: { id: true, name: true, createdBy: true }
+        });
+
+        if (geofence) {
+          io.of("/admin")
+            .to(`admin:${geofence.createdBy}`)
+            .emit("user-geofence-event", {
+              userId: socket.data.user.id,
+              userEmail: socket.data.user.email,
+              geofenceId: geofence.id,
+              geofenceName: geofence.name,
+              event: "EXIT",
+              timestamp: new Date()
+            });
+        }
+      }
     }
   } catch (error) {
     console.error("Location processing error:", error);
@@ -244,6 +289,7 @@ export const handleSocketLocationUpdate = async (
     (prisma as any)._queryCount = 0;
   }
 };
+
 
 // ─── Handle Refresh / Current Geofence Request ────────────────────────────────
 export const handleCurrentGeofenceRequest = async (socket: Socket) => {

@@ -19,29 +19,29 @@ import { sendGeofences,
 import { socketAdminMiddleware } from "./middlewares/socketAdminMiddleware";
 
 
-// Initialize configuration
+
 dotenv.config();
 
-// Create Express app
+
 const app = express();
 const prisma = new PrismaClient().$extends(withAccelerate());
 
-// Middleware
+
 app.use(cors({
   origin: process.env.CLIENT_URL || "*",
   credentials: true
 }));
 app.use(bodyParser.json());
 
-// API Routes
+
 app.use("/api/users", userRoutes);
 app.use("/api/admins", adminRoutes);
 
-// Server setup
+
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-// Socket.IO Configuration
+
 const io = new SocketIOServer(server, {
   path: "/api/socket.io",
   cors: {
@@ -55,10 +55,10 @@ const io = new SocketIOServer(server, {
   }
 });
 
-// Socket.IO Middleware
+
 io.use(socketAuthMiddleware);
 
-// Socket.IO Connection Handler
+
 io.on("connection", (socket) => {
   console.log(`New connection from user ${socket.data.user?.id} (${socket.id})`);
 
@@ -150,6 +150,12 @@ adminNamespace.on("connection", (socket) => {
 });
   socket.on("add-geofence", (data) => addGeofence(socket, data));
 
+  const adminId = socket.data.admin?.id;
+  console.log(`Admin connected: ${adminId} (${socket.id})`);
+
+  if (adminId) {
+    socket.join(`admin:${adminId}`);
+  }
 
   socket.on("update-geofence", (data) => updateGeofence(socket, data));
 
@@ -164,7 +170,7 @@ adminNamespace.on("connection", (socket) => {
   });
 });
 
-// Start Server
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Socket.IO available at ${process.env.CLIENT_URL}/api/socket.io`);
