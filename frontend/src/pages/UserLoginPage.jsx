@@ -57,20 +57,35 @@ function UserLoginPage() {
       setLoading(false); // stop spinner on failure
     }
   };
-  const handleForgotPassword = () => {
-    const response = axios.post(
+const handleForgotPassword = async () => {
+  if (!email) {
+    toast.error("Please enter your email first", {
+      position: "top-center",
+    });
+    return;
+  }
+
+  try {
+    const response = await axios.post(
       `${import.meta.env.VITE_BASE_URL}/api/users/forgot-password`,
       { email }
     );
-    if (response) {
-      setForgetPassword(true);
-    } else {
-      toast.error("Please enter a valid email to reset password", {
-        position: "top-center"
-      });
-    }
 
-  };
+    if (response.status === 200) {
+      toast.success("OTP sent to your email!", {
+        position: "top-center",
+      });
+      setForgetPassword(true);
+    }
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    toast.error(
+      error.response?.data?.error || "Failed to send reset OTP",
+      { position: "top-center" }
+    );
+  }
+};
+
 
 
   if (loading) {
