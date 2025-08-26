@@ -6,7 +6,8 @@ import Footer from "../components/Footers";
 import { UserDataContext } from "../Context/UserContext";
 import axios from "axios";
 import { Spinner } from "../components/Spinner";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import OtpSection from "../components/OtpSection";
 
 export default function UserSignupPage() {
   const navigate = useNavigate();
@@ -14,11 +15,12 @@ export default function UserSignupPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false); // spinner state
+  const [showOtp, setShowOtp] = useState(false); // ✅ controls OTP popup
   const { setUser } = useContext(UserDataContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // start spinner
+    setLoading(true);
 
     const newUser = { name, email, password };
 
@@ -28,32 +30,21 @@ export default function UserSignupPage() {
         newUser
       );
 
-      if (response.status === 200) {
-        const createdUser = response.data;
-        const { id, email, name } = createdUser.user;
-        setUser({ id, email, name });
-        localStorage.setItem("token", createdUser.access);
-
-        navigate("/userdashboard");
-        toast.success("Account created successfully!", {
-          position: "bottom-center"
-        });
+      if (response.status === 201) {
+        setLoading(false);
+        setShowOtp(true); // ✅ show OTP popup
+        toast.success("OTP sent!", { position: "bottom-center" });
       }
     } catch (error) {
       console.error("Error during signup:", error);
       toast.error("Signup failed. Please check your details and try again.", {
-        position: "top-center"
+        position: "top-center",
       });
-      setLoading(false); // stop spinner if failed
+      setLoading(false);
     }
-
-    setEmail("");
-    setPassword("");
-    setName("");
   };
 
   if (loading) {
-    // Spinner while redirecting
     return (
       <div className="flex items-center justify-center h-screen">
         <Spinner />
@@ -131,7 +122,7 @@ export default function UserSignupPage() {
               </div>
             </div>
 
-            {/* Centered Button and Link */}
+            {/* Submit Button + Login Link */}
             <div className="flex flex-col items-center mt-6">
               <button
                 type="button"
@@ -143,7 +134,10 @@ export default function UserSignupPage() {
 
               <p className="mt-4 text-sm text-center">
                 Already have an account?
-                <Link className="pl-2 underline text-blue-600" to={"/userlogin"}>
+                <Link
+                  className="pl-2 underline text-blue-600"
+                  to={"/userlogin"}
+                >
                   Login
                 </Link>
               </p>
@@ -158,7 +152,23 @@ export default function UserSignupPage() {
       </div>
 
       {/* Footer */}
-    
+      <Footer />
+
+      {/* ✅ OTP Popup Modal */}
+    {showOtp && (
+  <OtpSection
+    email={email}
+    onClose={() => setShowOtp(false)}
+    onVerified={({ user, access }) => {
+      // ✅ set user after OTP success
+      setUser(user);
+      localStorage.setItem("token", access);
+
+      setShowOtp(false);
+      navigate("/userdashboard");
+    }}
+  />
+)}
     </div>
   );
 }

@@ -7,14 +7,18 @@ import { UserDataContext } from "../Context/UserContext";
 import axios from "axios";
 import { Spinner } from "../components/Spinner";
 import { toast } from 'react-toastify';
-
+import PasswordResetForm from "../components/PasswordResetForm";
 function UserLoginPage() {
   const navigate = useNavigate();
   const { setUser } = useContext(UserDataContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // spinner state
+  const [loading, setLoading] = useState(false); 
+  const [forgetPassword, setForgetPassword] = useState(false);
+  // spinner state
+
+
 
   const handleEmailChange = (e) => setEmail(e.target.value);
   const handlePasswordChange = (e) => setPassword(e.target.value);
@@ -53,6 +57,21 @@ function UserLoginPage() {
       setLoading(false); // stop spinner on failure
     }
   };
+  const handleForgotPassword = () => {
+    const response = axios.post(
+      `${import.meta.env.VITE_BASE_URL}/api/users/forgot-password`,
+      { email }
+    );
+    if (response) {
+      setForgetPassword(true);
+    } else {
+      toast.error("Please enter a valid email to reset password", {
+        position: "top-center"
+      });
+    }
+
+  };
+
 
   if (loading) {
     // Spinner while logging in
@@ -67,11 +86,17 @@ function UserLoginPage() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <Header type="signin" />
-
+      
       {/* Main Content */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2">
         {/* Login Form Section */}
         <div className="flex justify-center items-center px-6 bg-white">
+          {forgetPassword ? (
+            <PasswordResetForm
+              email={email}
+              onClose={() => setForgetPassword(false)}
+            />
+          ) : (
           <div className="w-full max-w-md border border-gray-200 rounded-lg p-8 shadow-xl">
             <h1 className="text-3xl font-extrabold mb-8 text-center">
               Login to your account
@@ -125,7 +150,15 @@ function UserLoginPage() {
               >
                 Login Account
               </button>
-
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={!email || !password}
+                className="px-6 py-3 bg-blue-400 text-white font-semibold rounded-lg shadow-md hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 mt-4 transition-all duration-300 w-full"
+              >
+                Forgot Password?
+              </button>
+               
               <p className="mt-4 text-sm text-center">
                 Don't have an account?
                 <Link
@@ -135,10 +168,12 @@ function UserLoginPage() {
                   SignUp
                 </Link>
               </p>
+             
             </div>
           </div>
+          )}
         </div>
-
+       
         {/* Quote Section */}
         <div className="hidden lg:block bg-gray-50">
           <Quote />
@@ -149,6 +184,7 @@ function UserLoginPage() {
       
     </div>
   );
+
 }
 
 export default UserLoginPage;

@@ -8,6 +8,9 @@ import { sendGeofenceEventEmail } from "../utils/mail";
 import { Socket } from "socket.io";
 import { prisma, io } from "../server";
 import { checkIfInsideAnyFence } from "../utils/geoFenceArea";
+import generateOTP from "../utils/generateOtp"
+import {transporter} from "../utils/mail";
+import {generateOtpEmailHtml} from "../utils/mail"
 
 // ─── Redis Client Setup ─────────────────────────────────────────────────────
 const redis = createClient({ url: process.env.REDIS_URL });
@@ -322,16 +325,24 @@ export const createUser = async (req: Request, res: Response) => {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ error: 'User with this email already exists' });
+     const otp=generateOTP();
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { name, email, password: hashedPassword } });
-
-    const access = signAccessToken({ sub: user.id, role: user.role, email: user.email });
-    const refresh = signRefreshToken({ sub: user.id, role: user.role, email: user.email });
-    await persistToken(access, user.id, "ACCESS", new Date(Date.now() + 24*60*60*1000));
-    await persistToken(refresh, user.id, "REFRESH", new Date(Date.now() + 7*24*60*60*1000));
-
-    res.status(200).json({ user: { ...user, password: undefined }, access, refresh });
+    await redis.set(`signup:${email}`, JSON.stringify({ name, email, hashedPassword }), { EX: 300 })
+     await redis.set(`otp:${email}`, otp, { EX: 300 });
+    await transporter.sendMail({
+    from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Verify Your Email",
+    text: `Your OTP is ${otp}. It expires in 5 minutes.`,
+    html: generateOtpEmailHtml({
+    appName: "GeoFence System",
+    otp,
+    expiryMinutes: 5,
+    supportEmail: "support@geofencesystem.com"
+  })
+  });
+    res.status(201).json({ message: "OTP sent to email. Please verify to complete signup." }); 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create user' });
@@ -365,7 +376,7 @@ export const logoutUser = async (req: Request, res: Response) => {
   try {
     const token = req.headers.authorization?.split(" ")[1] || req.headers["x-refresh-token"] as string;
     if (!token) return res.status(400).json({ error: "No token provided" });
-
+    console.log("Logging out user:", req.user?.id);
     await revokeToken(token, "LOGOUT");
     res.status(200).json({ ok: true });
   } catch (error) {
@@ -399,5 +410,130 @@ export const verifyToken = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to verify token" });
+  }
+};
+export const verifyUserCreate= async(req: Request, res: Response)=>{
+   const { email, otp } = req.body;
+
+  const storedOtp = await redis.get(`otp:${email}`);
+  const pendingUser = await redis.get(`signup:${email}`);
+ 
+  if (!storedOtp || !pendingUser) {
+    return res.status(400).json({ message: "OTP expired or no signup request found" });
+  }
+
+  if (storedOtp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+  const {name,hashedPassword} =JSON.parse(pendingUser);
+  const user = await prisma.user.create({ data: { name, email, password: hashedPassword } });
+
+    const access = signAccessToken({ sub: user.id, role: user.role, email: user.email });
+    const refresh = signRefreshToken({ sub: user.id, role: user.role, email: user.email });
+    await persistToken(access, user.id, "ACCESS", new Date(Date.now() + 24*60*60*1000));
+    await persistToken(refresh, user.id, "REFRESH", new Date(Date.now() + 7*24*60*60*1000));
+     // Clean Redis
+    await redis.del(`otp:${email}`);
+    await redis.del(`signup:${email}`);
+    res.status(200).json({ user: { ...user, password: undefined }, access, refresh });
+  
+}
+
+export const resendOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    // Check Redis for existing OTP
+    let otp = await redis.get(`otp:${email}`);
+
+    if (!otp) {
+      // If expired, generate new one
+      otp = generateOTP();
+      await redis.set(`otp:${email}`, otp, { EX: 300 });
+    }
+
+    // Send OTP email
+     await transporter.sendMail({
+    from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Your new OTP Code",
+    text: `Your OTP is ${otp}. It expires in 5 minutes.`,
+    html: generateOtpEmailHtml({
+    appName: "GeoFence System",
+    otp,
+    expiryMinutes: 5,
+    supportEmail: "support@geofencesystem.com"
+  })
+  });
+
+    return res.status(200).json({ message: "OTP resent successfully" });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    return res.status(500).json({ error: "Failed to resend OTP" });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const otp = generateOTP();
+    await redis.set(`forgot-password:${email}`, otp, { EX: 300 });
+
+    await transporter.sendMail({
+      from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Your password reset OTP is ${otp}. It expires in 5 minutes.`,
+      html: generateOtpEmailHtml({
+        appName: "GeoFence System",
+        otp,
+        expiryMinutes: 5,
+        supportEmail: "support@geofencesystem.com"
+      })
+    });
+
+    return res.status(200).json({ message: "Password reset OTP sent successfully" });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ error: "Failed to send password reset OTP" });
+  }
+};
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters long" });
+    }
+
+    const storedOtp = await redis.get(`forgot-password:${email}`);
+    if (!storedOtp) {
+      return res.status(400).json({ error: "Invalid or expired OTP" });
+    }
+
+    if (storedOtp !== otp) {
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashedPassword }
+    });
+
+    await redis.del(`forgot-password:${email}`);
+    return res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ error: "Failed to reset password" });
   }
 };

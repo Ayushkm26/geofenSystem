@@ -5,7 +5,7 @@ import UserLoginPage from './pages/UserLoginPage';
 import UserSignupPage from './pages/UserSignupPage';
 import Dashboard from './pages/Dashboard';
 import UserProtectedWrapper from './pages/UserProtectedWrapper';
-import Logout from './pages/UserLogout';
+import UserLogout from './pages/UserLogout';
 import LocationHistory from './pages/LocationHistory';
 import { useState } from 'react';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -13,6 +13,7 @@ import AdminSignupPage from './pages/AdminSignupPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProtectedWrapper from './pages/AdminProtectedWrapper';
 import AdminLogout from './pages/AdminLogout';
+import OtpSection from './components/OtpSection';
 function App() {
 
   return (
@@ -23,7 +24,7 @@ function App() {
      <Route path="/userlogin" element={<UserLoginPage />} />
      <Route path="/usersignup" element={<UserSignupPage />} />
      <Route path="/userdashboard" element={<UserProtectedWrapper><Dashboard/></UserProtectedWrapper>} />
-      <Route path="/userlogout" element={<UserProtectedWrapper><Logout /></UserProtectedWrapper>} />
+      <Route path="/userlogout" element={<UserProtectedWrapper><UserLogout /></UserProtectedWrapper>} />
       <Route path="/locationhistory" element={<UserProtectedWrapper><LocationHistory /></UserProtectedWrapper>} />
       <Route path="/adminlogin" element={<AdminLoginPage />} />
       <Route path="/adminsignup" element={<AdminSignupPage />} />

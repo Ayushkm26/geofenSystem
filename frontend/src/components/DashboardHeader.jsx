@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { UserDataContext, LocationContext } from "../Context/UserContext";
 
 const DashboardHeader = ({ type }) => {
@@ -6,6 +7,7 @@ const DashboardHeader = ({ type }) => {
   const { isShared } = useContext(LocationContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const avatarRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -17,6 +19,12 @@ const DashboardHeader = ({ type }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleLogout = () => {
+    // navigate to /userlogout route
+    navigate("/userlogout");
+    setDropdownOpen(false);
+  };
+
   return (
     <header>
       <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full">
@@ -25,7 +33,7 @@ const DashboardHeader = ({ type }) => {
           <a href={"/userdashboard"} className="flex items-center">
             <img
               src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
-              className="h-8 sm:h-10" // smaller on mobile
+              className="h-8 sm:h-10"
               alt="Logo"
             />
             <span className="text-lg sm:text-xl font-semibold text-gray-800 ml-2">
@@ -42,7 +50,7 @@ const DashboardHeader = ({ type }) => {
               }`}
             ></span>
 
-            {/* Desktop: full connected/disconnected */}
+            {/* Desktop: status */}
             <p
               className={`hidden sm:flex py-1 px-3 text-gray-800 font-bold rounded items-center
               ${isShared ? "bg-green-500 hover:bg-gray-300" : "bg-red-500 hover:bg-gray-300"}`}
@@ -83,32 +91,32 @@ const DashboardHeader = ({ type }) => {
 
                 <ul className="py-2 text-sm text-gray-700">
                   <li>
-                    <a
-                      href="/userdashboard"
-                      className="block px-4 py-2 font-medium hover:bg-gray-100"
+                    <button
+                      onClick={() => navigate("/userdashboard")}
+                      className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
                     >
                       Message Admin
-                    </a>
+                    </button>
                   </li>
                   <li>
-                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                    <button className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
                       Resync
-                    </a>
+                    </button>
                   </li>
                   <li>
-                    <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                    <button className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
                       Help
-                    </a>
+                    </button>
                   </li>
                 </ul>
 
                 <div className="py-2">
-                  <a
-                    href={type === "dashboard" ? "/userlogout" : "/userlogin"}
-                    className="block px-4 py-2 font-medium text-sm text-gray-700 hover:bg-gray-100"
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 font-medium text-sm text-gray-700 hover:bg-gray-100"
                   >
                     Logout
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

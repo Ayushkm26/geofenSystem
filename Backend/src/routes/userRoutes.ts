@@ -1,6 +1,6 @@
 import { Router } from "express";
-import {createUser} from "../controllers/userControllers";
-import { loginUser, logoutUser, getLocationHistory} from "../controllers/userControllers";
+import {createUser, resetPassword} from "../controllers/userControllers";
+import { loginUser, logoutUser, getLocationHistory,verifyUserCreate,resendOtp,forgotPassword} from "../controllers/userControllers";
 import { authUserMiddleware } from "../middlewares/userMiddlewares";
 import { body } from 'express-validator';
 import {verifyToken}  from "../controllers/userControllers";
@@ -18,11 +18,12 @@ router.post("/login",[
     body("email").isEmail().withMessage('Invalid email format'),    
     body("password").isLength({min :6}).withMessage("Password must be at least 6 characters long"),
 ], loginUser);
-router.get('/logout', authUserMiddleware, logoutUser);
+router.post('/logout', authUserMiddleware, logoutUser);
 router.get("/verify-token", authUserMiddleware, verifyToken);
-
-// router.get("/geofenceDetails", authUserMiddleware, emitGeofenceDetails);
-// TODO: Implement an Express-compatible handler for geofence details if needed.
+router.post("/after-verify",verifyUserCreate);
+router.post("/resend-otp", resendOtp);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.get("/locationHistory" ,authUserMiddleware,getLocationHistory)
 
 export default router;
