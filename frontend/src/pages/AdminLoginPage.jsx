@@ -51,7 +51,6 @@ function AdminLoginPage() {
 
         setEmail("");
         setPassword("");
-        setName("");
     }; 
   if (loading) {
     // Spinner while redirecting
