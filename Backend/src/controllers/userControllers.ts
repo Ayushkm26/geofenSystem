@@ -7,6 +7,7 @@ import { signAccessToken, signRefreshToken, persistToken, revokeToken } from "..
 import { sendGeofenceEventEmail } from "../utils/mail";
 import { Socket } from "socket.io";
 import { prisma, io } from "../server";
+import { checkIfInsideAnyFence } from "../utils/geoFenceArea";
 
 // ─── Redis Client Setup ─────────────────────────────────────────────────────
 const redis = createClient({ url: process.env.REDIS_URL });
@@ -39,6 +40,7 @@ const cacheAndGet = async (id: string) => {
 };
 
 // ─── Process User Location ─────────────────────────────────────────────────
+// ─── Process User Location ─────────────────────────────────────────────────
 export const processLocation = async (
   userId: string | undefined,
   email: string | undefined,
@@ -49,11 +51,11 @@ export const processLocation = async (
     if (!userId) throw new Error("User ID is required");
     if (!latitude || !longitude) throw new Error("Latitude and longitude are required");
 
-    const fences = await getAllFences();
-    const insideFence = fences.find(f => {
-      const dist = Math.sqrt(Math.pow(latitude - f.latitude, 2) + Math.pow(longitude - f.longitude, 2));
-      return dist <= f.radius;
-    });
+    // ─── Find Current Fence Using Haversine ────────────────────────────
+    const fencesInside = await checkIfInsideAnyFence(latitude, longitude);
+    const insideFence = fencesInside.length
+      ? fencesInside.reduce((prev, curr) => curr.distance < prev.distance ? curr : prev)
+      : null;
 
     const lastRecord = await prisma.location.findFirst({
       where: { userId },
@@ -65,47 +67,64 @@ export const processLocation = async (
     let eventType: "ENTER" | "EXIT" | "SWITCH" | null = null;
     let payload: any = {};
 
-    // ─── ENTER ─────────────────────────────
-   if (insideFence && !wasInside) {
-  eventType = "ENTER";
-  const [newRecord, newUserInFence] = await prisma.$transaction([
-    prisma.location.create({
-      data: {
-        userId,
-        areaId: insideFence.id,
-        areaName: insideFence.name,
-        inLatitude: latitude,
-        inLongitude: longitude,
-        inTime: new Date(),
-        isDisconnected: false,
-      },
-    }),
-    prisma.userGeofence.upsert({
-      where: {
-        userId_geofenceId: {
-          userId,
-          geofenceId: insideFence.id,
-        },
-      },
-      create: { userId, geofenceId: insideFence.id },
-      update: {}, // do nothing if exists
-    }),
-  ]);
-  payload = { ...newRecord, userInFence: newUserInFence, areaDetails: await cacheAndGet(insideFence.id) };
-}
 
-    // ─── EXIT ──────────────────────────────
-    else if (!insideFence && wasInside) {
+    // ─── ENTER ─────────────────────────────
+    if (insideFence && !wasInside) {
+      eventType = "ENTER";
+      const [newRecord, newUserInFence] = await prisma.$transaction([
+        prisma.location.create({
+          data: {
+            userId,
+            areaId: insideFence.id,
+            areaName: insideFence.name,
+            inLatitude: latitude,
+            inLongitude: longitude,
+            inTime: new Date(),
+            isDisconnected: false,
+          },
+        }),
+        prisma.userGeofence.upsert({
+          where: {
+            userId_geofenceId: {
+              userId,
+              geofenceId: insideFence.id,
+            },
+          },
+          create: { userId, geofenceId: insideFence.id },
+          update: {}, // do nothing if exists
+        }),
+      ]);
+      payload = { ...newRecord, userInFence: newUserInFence, areaDetails: await cacheAndGet(insideFence.id) };
+    }
+
+    // ─── EXIT (fixed) ──────────────────────
+    else if (!insideFence && lastRecord && lastRecord.areaId) {
       eventType = "EXIT";
-      const exitedFence = await cacheAndGet(lastRecord!.areaId!);
+
+      // Fetch geofence details or fallback
+      const exitedFence = await cacheAndGet(lastRecord.areaId);
 
       const [updatedRecord] = await prisma.$transaction([
-        prisma.location.update({ where: { id: lastRecord!.id }, data: { outLatitude: latitude, outLongitude: longitude, outTime: new Date(), isDisconnected: true } }),
-        prisma.userGeofence.deleteMany({ where: { userId, geofenceId: lastRecord!.areaId! } }),
+        prisma.location.update({
+          where: { id: lastRecord.id },
+          data: {
+            outLatitude: latitude,
+            outLongitude: longitude,
+            outTime: new Date(),
+            isDisconnected: true,
+          },
+        }),
+        prisma.userGeofence.deleteMany({
+          where: { userId, geofenceId: lastRecord.areaId },
+        }),
       ]);
       (prisma as any)._queryCount += 2;
 
-      payload = { ...updatedRecord, exitedFence };
+      // Ensure exitedFence always has id + name
+      payload = {
+        ...updatedRecord,
+        exitedFence: exitedFence ?? { id: lastRecord.areaId, name: "Unknown Geofence" },
+      };
     }
 
     // ─── SWITCH ───────────────────────────
@@ -115,45 +134,90 @@ export const processLocation = async (
       const [user, newGeofence, oldGeofence] = await Promise.all([
         prisma.user.findUnique({ where: { id: userId } }),
         prisma.geoFenceArea.findUnique({ where: { id: insideFence.id } }),
-        lastRecord!.areaId ? prisma.geoFenceArea.findUnique({ where: { id: lastRecord!.areaId } }) : Promise.resolve(undefined),
+        lastRecord!.areaId
+          ? prisma.geoFenceArea.findUnique({ where: { id: lastRecord!.areaId } })
+          : Promise.resolve(undefined),
       ]);
       if (!user || !newGeofence || !oldGeofence) throw new Error("Required entities not found");
 
       const [_, newRecord, newUserInFence] = await prisma.$transaction([
-        prisma.location.update({ where: { id: lastRecord!.id }, data: { outLatitude: latitude, outLongitude: longitude, outTime: new Date(), isDisconnected: true, isSwitched: true } }),
-        prisma.location.create({ data: { userId, areaId: insideFence.id, areaName: insideFence.name, inLatitude: latitude, inLongitude: longitude, inTime: new Date(), isDisconnected: false } }),
+        prisma.location.update({
+          where: { id: lastRecord!.id },
+          data: {
+            outLatitude: latitude,
+            outLongitude: longitude,
+            outTime: new Date(),
+            isDisconnected: true,
+            isSwitched: true,
+          },
+        }),
+        prisma.location.create({
+          data: {
+            userId,
+            areaId: insideFence.id,
+            areaName: insideFence.name,
+            inLatitude: latitude,
+            inLongitude: longitude,
+            inTime: new Date(),
+            isDisconnected: false,
+          },
+        }),
         prisma.userGeofence.create({ data: { userId, geofenceId: insideFence.id } }),
         prisma.userGeofence.deleteMany({ where: { userId, geofenceId: lastRecord!.areaId! } }),
       ]);
       (prisma as any)._queryCount += 4;
 
-      payload = { ...newRecord, userInFence: newUserInFence, areaDetails: newGeofence, exitedFence: oldGeofence };
+      payload = {
+        ...newRecord,
+        userInFence: newUserInFence,
+        areaDetails: newGeofence,
+        exitedFence: oldGeofence ?? { id: lastRecord!.areaId, name: "Unknown Geofence" },
+      };
     }
 
     if (!eventType) return { message: "No status change" };
 
     // Redis event queue
-    await redis.lPush("geofence-events", JSON.stringify({ type: eventType, data: payload, queryCount: (prisma as any)._queryCount }));
+    await redis.lPush(
+      "geofence-events",
+      JSON.stringify({ type: eventType, data: payload, queryCount: (prisma as any)._queryCount })
+    );
 
     // Email notifications
     if (email && (eventType === "ENTER" || eventType === "SWITCH")) {
       const geofence = payload.areaDetails;
-      if (geofence?.admin?.email) await sendGeofenceEventEmail(eventType, payload, email, geofence.admin.email);
+      if (geofence?.admin?.email)
+        await sendGeofenceEventEmail(eventType, payload, email, geofence.admin.email);
     } else if (email && eventType === "EXIT" && payload.exitedFence?.admin?.email) {
       await sendGeofenceEventEmail(eventType, payload, email, payload.exitedFence.admin.email);
     }
 
-    return { eventType, message: `Processed ${eventType} event`, payload, queryCount: (prisma as any)._queryCount };
-  } finally { (prisma as any)._queryCount = 0; }
+    return {
+      eventType,
+      message: `Processed ${eventType} event`,
+      payload,
+      queryCount: (prisma as any)._queryCount,
+    };
+  } finally {
+    (prisma as any)._queryCount = 0;
+  }
 };
 
-// ─── Handle Socket Updates ──────────────────────────────────────────────────
-export const handleSocketLocationUpdate = async (socket: Socket, data: { latitude: number; longitude: number }) => {
+// ─── Handle Socket Updates (EXIT fixed) ─────────────────────────────────────
+export const handleSocketLocationUpdate = async (
+  socket: Socket,
+  data: { latitude: number; longitude: number }
+) => {
   try {
     const userId = socket.data?.user?.id;
     if (!userId) throw new Error("User authentication missing");
 
-    const result = await processLocation(userId, socket.data.user.email, data.latitude, data.longitude);
+    const result = await processLocation(
+      userId,
+      socket.data.user.email,
+      data.latitude,
+      data.longitude
+    );
     socket.emit("location-response", result);
 
     // Notify admin if ENTER/SWITCH
@@ -162,27 +226,63 @@ export const handleSocketLocationUpdate = async (socket: Socket, data: { latitud
       socket.emit("geofence-details", result.payload.areaDetails);
 
       if (result.payload.areaDetails?.id) {
-        const geofence = await prisma.geoFenceArea.findUnique({ where: { id: result.payload.areaDetails.id }, select: { id: true, name: true, createdBy: true } });
-        if (geofence) io.of("/admin").to(`admin:${geofence.createdBy}`).emit("user-geofence-event", { userId, userEmail: socket.data.user.email, geofenceId: geofence.id, geofenceName: geofence.name, event: result.eventType, timestamp: new Date() });
+        const geofence = await prisma.geoFenceArea.findUnique({
+          where: { id: result.payload.areaDetails.id },
+          select: { id: true, name: true, createdBy: true },
+        });
+        if (geofence)
+          io.of("/admin")
+            .to(`admin:${geofence.createdBy}`)
+            .emit("user-geofence-event", {
+              userId,
+              userEmail: socket.data.user.email,
+              geofenceId: geofence.id,
+              geofenceName: geofence.name,
+              event: result.eventType,
+              timestamp: new Date(),
+            });
       }
     }
 
-    // Notify admin on EXIT
+    // Notify admin on EXIT (fixed)
     if (result.eventType === "EXIT") {
-      socket.emit("outside-geofence", { message: "You are outside all geofence areas", timestamp: new Date(), exitedGeofence: result.payload.exitedFence });
+      socket.emit("outside-geofence", {
+        message: "You are outside all geofence areas",
+        timestamp: new Date(),
+        exitedGeofence: result.payload.exitedFence,
+      });
       delete socket.data.currentGeofence;
 
       if (result.payload.exitedFence?.id) {
-        const geofence = await prisma.geoFenceArea.findUnique({ where: { id: result.payload.exitedFence.id }, select: { id: true, name: true, createdBy: true } });
-        if (geofence) io.of("/admin").to(`admin:${geofence.createdBy}`).emit("user-geofence-event", { userId, userEmail: socket.data.user.email, geofenceId: geofence.id, geofenceName: geofence.name, event: "EXIT", timestamp: new Date() });
+        const geofence = await prisma.geoFenceArea.findUnique({
+          where: { id: result.payload.exitedFence.id },
+          select: { id: true, name: true, createdBy: true },
+        });
+
+        const finalGeofence = geofence ?? result.payload.exitedFence;
+        io.of("/admin")
+          .to(`admin:${finalGeofence.createdBy}`)
+          .emit("user-geofence-event", {
+            userId,
+            userEmail: socket.data.user.email,
+            geofenceId: finalGeofence.id,
+            geofenceName: finalGeofence.name ?? "Unknown Geofence",
+            event: "EXIT",
+            timestamp: new Date(),
+          });
       }
     }
-
   } catch (error) {
     console.error("Location processing error:", error);
-    socket.emit("location-error", { error: error instanceof Error ? error.message : String(error), queryCount: (prisma as any)._queryCount });
-  } finally { (prisma as any)._queryCount = 0; }
+    socket.emit("location-error", {
+      error: error instanceof Error ? error.message : String(error),
+      queryCount: (prisma as any)._queryCount,
+    });
+  } finally {
+    (prisma as any)._queryCount = 0;
+  }
 };
+
 
 // ─── Handle Current Geofence Request ────────────────────────────────────────
 export const handleCurrentGeofenceRequest = async (socket: Socket) => {
