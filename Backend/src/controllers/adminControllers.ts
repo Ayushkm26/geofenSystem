@@ -133,6 +133,7 @@ export const addGeofence = async (socket: Socket, data: any) => {
     const { name, latitude, longitude, radius } = data;
     console.log(radius)
     const coordinates = createGeofenceArea(longitude, latitude, radius);
+    
     const geofenceData: any = {
       name,
       type: coordinates.type,

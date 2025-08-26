@@ -96,6 +96,15 @@ newSocket.on("user-geofence-event", (data) => {
   );
   
 });
+newSocket.on('outside-geofence', (data) => {
+  console.log("User outside fence:", data);
+  newSocket.emit("get-geofences");
+  toast.warn(
+    `${data.userEmail || data.userId} is outside the geofence ${data.geofenceName}`,
+    { position: "top-right" }
+  );
+});
+
 newSocket.on('geofence-updated', (updatedGeofence) => {
   console.log('Geofence updated:', updatedGeofence);
   setGeofences((prev) =>
