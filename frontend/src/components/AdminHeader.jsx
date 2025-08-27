@@ -24,7 +24,10 @@ const AdminHeader = () => {
       <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full border-b border-green-400">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <a href="/admindashboard" className="flex items-center space-x-2">
+          <button
+            onClick={() => navigate("/admindashboard")}
+            className="flex items-center space-x-2 focus:outline-none"
+          >
             <img
               src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
               className="h-10 w-auto"
@@ -33,7 +36,7 @@ const AdminHeader = () => {
             <span className="text-xl font-semibold text-gray-800">
               GeoFence System
             </span>
-          </a>
+          </button>
 
           {/* Desktop: Free + Avatar */}
           <div className="hidden sm:flex items-center space-x-4">
@@ -56,28 +59,40 @@ const AdminHeader = () => {
                   </div>
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
-                      <a href="/admindashboard" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/admindashboard")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Message Users
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/resync")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Resync Data
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/help")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Help
-                      </a>
+                      </button>
                     </li>
                   </ul>
                   <div className="py-2">
-                    <a
-                      href="/adminlogout"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                    <button
+                      onClick={() => {
+                        navigate("/adminlogout");
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
                     >
                       Logout
-                    </a>
+                    </button>
                   </div>
                 </div>
               )}
@@ -108,32 +123,41 @@ const AdminHeader = () => {
                   </div>
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
-                      <a href="/admindashboard" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/admindashboard")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Message Users
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/resync")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Resync Data
-                      </a>
+                      </button>
                     </li>
                     <li>
-                      <a href="#" className="block px-4 py-2 font-medium hover:bg-gray-100">
+                      <button
+                        onClick={() => navigate("/help")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                      >
                         Help
-                      </a>
+                      </button>
                     </li>
                   </ul>
-                 <div className="py-2">
-         <button
-         onClick={() => {
-         navigate("/adminlogout");
-         setDropdownOpen(false);
-         }}
-       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
-         >
-    Logout
-  </button>
-</div>
+                  <div className="py-2">
+                    <button
+                      onClick={() => {
+                        navigate("/adminlogout");
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                    >
+                      Logout
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -143,35 +167,35 @@ const AdminHeader = () => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="sm:hidden mt-2 space-y-2 px-2 pb-3">
-            <a
-              href="/admindashboard"
-              className="block px-4 py-2 hover:bg-gray-100 font-medium rounded"
+            <button
+              onClick={() => navigate("/admindashboard")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
             >
               Message Users
-            </a>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 font-medium rounded"
+            </button>
+            <button
+              onClick={() => navigate("/resync")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
             >
               Resync Data
-            </a>
-            <a
-              href="#"
-              className="block px-4 py-2 hover:bg-gray-100 font-medium rounded"
+            </button>
+            <button
+              onClick={() => navigate("/help")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
             >
               Help
-            </a>
-          <div className="py-2">
-         <button
-         onClick={() => {
-         navigate("/adminlogout");
-         setDropdownOpen(false);
-         }}
-       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
-         >
-    Logout
-  </button>
-</div>
+            </button>
+            <div className="py-2">
+              <button
+                onClick={() => {
+                  navigate("/adminlogout");
+                  setDropdownOpen(false);
+                }}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         )}
       </nav>
