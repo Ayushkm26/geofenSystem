@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { AdminDataContext } from "../Context/AdminContex"; 
-import { useNavigate } from "react-router-dom";                                                            
+import { AdminDataContext } from "../Context/AdminContex";
+import { useNavigate } from "react-router-dom";
 
 const AdminHeader = () => {
   const { admin } = useContext(AdminDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const avatarRef = useRef(null);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (avatarRef.current && !avatarRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
     };
@@ -38,12 +38,12 @@ const AdminHeader = () => {
             </span>
           </button>
 
-          {/* Desktop: Free + Avatar */}
+          {/* Desktop */}
           <div className="hidden sm:flex items-center space-x-4">
             <p>
               <strong className="text-gray-800 font-bold">Free</strong>
             </p>
-            <div ref={avatarRef} className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none"
@@ -99,7 +99,7 @@ const AdminHeader = () => {
             </div>
           </div>
 
-          {/* Mobile: Avatar at right + Hamburger */}
+          {/* Mobile */}
           <div className="sm:hidden flex items-center space-x-4">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -107,7 +107,7 @@ const AdminHeader = () => {
             >
               ☰
             </button>
-            <div ref={avatarRef} className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none"
