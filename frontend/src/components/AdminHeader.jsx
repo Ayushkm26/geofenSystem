@@ -158,15 +158,17 @@ const AdminHeader = () => {
             >
               Help
             </a>
-            <button
-              onClick={() => {
-                navigate("/adminlogout");
-                setDropdownOpen(false);
-              }}
-              className="block px-4 py-2 hover:bg-gray-100 font-medium rounded"
-            >
-              Logout
-            </button>
+          <div className="py-2">
+         <button
+         onClick={() => {
+         navigate("/adminlogout");
+         setDropdownOpen(false);
+         }}
+       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+         >
+    Logout
+  </button>
+</div>
           </div>
         )}
       </nav>
