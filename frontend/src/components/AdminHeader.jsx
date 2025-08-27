@@ -6,18 +6,40 @@ const AdminHeader = () => {
   const { admin } = useContext(AdminDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  
+  // Separate refs for desktop and mobile dropdowns
+  const desktopDropdownRef = useRef(null);
+  const mobileDropdownRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Check both desktop and mobile dropdown refs
+      if (
+        (desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target)) &&
+        (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target))
+      ) {
         setDropdownOpen(false);
       }
     };
+    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Handle logout with proper cleanup
+  const handleLogout = () => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+    navigate("/adminlogout");
+  };
+
+  // Handle navigation with cleanup
+  const handleNavigation = (path) => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+    navigate(path);
+  };
 
   return (
     <header>
@@ -25,7 +47,7 @@ const AdminHeader = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <button
-            onClick={() => navigate("/admindashboard")}
+            onClick={() => handleNavigation("/admindashboard")}
             className="flex items-center space-x-2 focus:outline-none"
           >
             <img
@@ -43,41 +65,41 @@ const AdminHeader = () => {
             <p>
               <strong className="text-gray-800 font-bold">Free</strong>
             </p>
-            <div ref={dropdownRef} className="relative">
+            <div ref={desktopDropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none"
+                className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none hover:bg-gray-50 transition-colors"
               >
                 {admin?.name ? admin.name.charAt(0).toUpperCase() : "A"}
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-sm z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-lg border z-50">
                   <div className="px-4 py-3 text-sm text-gray-900">
-                    <div className="font-semibold">{admin?.name}</div>
-                    <div className="truncate">{admin?.email}</div>
+                    <div className="font-semibold">{admin?.name || "Admin"}</div>
+                    <div className="truncate text-gray-500">{admin?.email || "admin@example.com"}</div>
                   </div>
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <button
-                        onClick={() => navigate("/admindashboard")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/admindashboard")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Message Users
                       </button>
                     </li>
                     <li>
                       <button
-                        onClick={() => navigate("/resync")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/resync")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Resync Data
                       </button>
                     </li>
                     <li>
                       <button
-                        onClick={() => navigate("/help")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/help")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Help
                       </button>
@@ -85,11 +107,8 @@ const AdminHeader = () => {
                   </ul>
                   <div className="py-2">
                     <button
-                      onClick={() => {
-                        navigate("/adminlogout");
-                        setDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors"
                     >
                       Logout
                     </button>
@@ -103,45 +122,45 @@ const AdminHeader = () => {
           <div className="sm:hidden flex items-center space-x-4">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-800 focus:outline-none text-2xl"
+              className="text-gray-800 focus:outline-none text-2xl hover:text-gray-600 transition-colors"
             >
               ☰
             </button>
-            <div ref={dropdownRef} className="relative">
+            <div ref={mobileDropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none"
+                className="flex items-center justify-center h-10 w-10 text-lg bg-white font-bold text-black rounded-full focus:outline-none hover:bg-gray-50 transition-colors"
               >
                 {admin?.name ? admin.name.charAt(0).toUpperCase() : "A"}
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-sm z-50">
+                <div className="absolute right-0 mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-lg border z-50">
                   <div className="px-4 py-3 text-sm text-gray-900">
-                    <div className="font-semibold">{admin?.name}</div>
-                    <div className="truncate">{admin?.email}</div>
+                    <div className="font-semibold">{admin?.name || "Admin"}</div>
+                    <div className="truncate text-gray-500">{admin?.email || "admin@example.com"}</div>
                   </div>
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <button
-                        onClick={() => navigate("/admindashboard")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/admindashboard")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Message Users
                       </button>
                     </li>
                     <li>
                       <button
-                        onClick={() => navigate("/resync")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/resync")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Resync Data
                       </button>
                     </li>
                     <li>
                       <button
-                        onClick={() => navigate("/help")}
-                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
+                        onClick={() => handleNavigation("/help")}
+                        className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Help
                       </button>
@@ -149,11 +168,8 @@ const AdminHeader = () => {
                   </ul>
                   <div className="py-2">
                     <button
-                      onClick={() => {
-                        navigate("/adminlogout");
-                        setDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors"
                     >
                       Logout
                     </button>
@@ -166,32 +182,29 @@ const AdminHeader = () => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="sm:hidden mt-2 space-y-2 px-2 pb-3">
+          <div className="sm:hidden mt-2 space-y-2 px-2 pb-3 bg-white rounded-lg shadow-sm border">
             <button
-              onClick={() => navigate("/admindashboard")}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
+              onClick={() => handleNavigation("/admindashboard")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded transition-colors"
             >
               Message Users
             </button>
             <button
-              onClick={() => navigate("/resync")}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
+              onClick={() => handleNavigation("/resync")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded transition-colors"
             >
               Resync Data
             </button>
             <button
-              onClick={() => navigate("/help")}
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded"
+              onClick={() => handleNavigation("/help")}
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded transition-colors"
             >
               Help
             </button>
-            <div className="py-2">
+            <div className="pt-2 border-t border-gray-200">
               <button
-                onClick={() => {
-                  navigate("/adminlogout");
-                  setDropdownOpen(false);
-                }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+                onClick={handleLogout}
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium rounded transition-colors"
               >
                 Logout
               </button>
