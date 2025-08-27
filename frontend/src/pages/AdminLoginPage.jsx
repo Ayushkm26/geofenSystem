@@ -39,7 +39,7 @@ function AdminLoginPage() {
                 localStorage.setItem("token", createdUser.access);
                 setLoading(false);
                 navigate("/admindashboard");
-                toast.success("Admin account created successfully!", {
+                toast.success("Login successful!", {
                     position: "bottom-center"
                 });
             }
