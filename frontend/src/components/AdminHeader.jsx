@@ -123,14 +123,17 @@ const AdminHeader = () => {
                       </a>
                     </li>
                   </ul>
-                  <div className="py-2">
-                    <a
-                      href="/adminlogout"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
-                    >
-                      Logout
-                    </a>
-                  </div>
+                 <div className="py-2">
+         <button
+         onClick={() => {
+         navigate("/adminlogout");
+         setDropdownOpen(false);
+         }}
+       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-medium"
+         >
+    Logout
+  </button>
+</div>
                 </div>
               )}
             </div>
