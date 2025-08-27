@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
-import { AdminDataContext } from "../Context/AdminContex";                                                             
+import { AdminDataContext } from "../Context/AdminContex"; 
+import { useNavigate } from "react-router-dom";                                                            
 
 const AdminHeader = () => {
   const { admin } = useContext(AdminDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const avatarRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -157,7 +159,10 @@ const AdminHeader = () => {
               Help
             </a>
             <a
-              href="/adminlogout"
+              onClick={() => {
+                navigate("/adminlogout");
+                setDropdownOpen(false);
+              }}
               className="block px-4 py-2 hover:bg-gray-100 font-medium rounded"
             >
               Logout

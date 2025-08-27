@@ -1,129 +1,127 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useState, useRef, useEffect } from "react";
+import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
 
-export default function OtpSection({ email, onClose, onVerified }) {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
-  const [resendCooldown, setResendCooldown] = useState(0); // ✅ FIX: define cooldown state
+export default function OtpSection({ email, type, onClose, onVerified }) {
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
 
-  // Initialize refs
+  // Keep only 6 refs
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, 6);
   }, []);
 
-  // Timer countdown effect
+  // Countdown timer
   useEffect(() => {
     if (timeLeft > 0) {
-      const timer = setTimeout(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
+      const timer = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
       return () => clearTimeout(timer);
     }
   }, [timeLeft]);
 
-  // Resend cooldown effect
+  // Resend cooldown timer
   useEffect(() => {
     if (resendCooldown > 0) {
-      const timer = setTimeout(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
+      const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000);
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
 
-  // Format time as MM:SS
+  // Format MM:SS
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const remaining = seconds % 60;
+    return `${minutes}:${remaining.toString().padStart(2, "0")}`;
   };
 
   const handleInputChange = (index, value) => {
-    if (value.length > 1) return;
-    if (value && !/^\d$/.test(value)) return;
+    if (value.length > 1 || (value && !/^\d$/.test(value))) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
   const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    if (e.key === 'Enter') {
-      handleVerify();
-    }
+    if (e.key === "Enter") handleVerify();
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const newOtp = [...otp];
-    for (let i = 0; i < 6; i++) {
-      newOtp[i] = pasteData[i] || '';
-    }
+    for (let i = 0; i < 6; i++) newOtp[i] = paste[i] || "";
     setOtp(newOtp);
-    const nextEmptyIndex = newOtp.findIndex(digit => digit === '');
-    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
-    inputRefs.current[focusIndex]?.focus();
+
+    const nextIndex = newOtp.findIndex((d) => d === "");
+    inputRefs.current[nextIndex === -1 ? 5 : nextIndex]?.focus();
   };
 
   const handleVerify = async () => {
     const otpValue = otp.join("");
-    if (otpValue.length === 6) {
-       const otp = otpValue;
-       console.log(otp,email);
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_BASE_URL}/api/users/after-verify`,
-          { email, otp }
-        );
-
-        if (response.status === 200) {
-            const { user, access } = response.data;
-            onVerified({ user, access }); // ✅ pass user data back to parent
-          toast.success("OTP verified successfully!", { position: "top-center" });
-          // ✅ hand control back to parent
-        }
-      } catch (error) {
-        toast.error("OTP verification failed. Please try again.", { position: "top-center" });
-      }
-    } else {
+    if (otpValue.length !== 6) {
       toast.error("Please enter all 6 digits", { position: "top-center" });
+      return;
+    }
+
+    try {
+      const endpoint =
+        type === "admin"
+          ? `${import.meta.env.VITE_BASE_URL}/api/admins/after-verify`
+          : `${import.meta.env.VITE_BASE_URL}/api/users/after-verify`;
+
+      const response = await axios.post(endpoint, { email, otp: otpValue });
+
+      if (response.status === 200) {
+        const { user, admin, access } = response.data;
+        onVerified({ user: user || admin, access });
+        toast.success("OTP verified successfully!", { position: "top-center" });
+      }
+    } catch (err) {
+      toast.error("OTP verification failed. Please try again.", {
+        position: "top-center",
+      });
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+
+    try {
+      const endpoint =
+        type === "admin"
+          ? `${import.meta.env.VITE_BASE_URL}/api/admins/resend-otp`
+          : `${import.meta.env.VITE_BASE_URL}/api/users/resend-otp`;
+
+      const response = await axios.post(endpoint, { email });
+
+      if (response.status === 200) {
+        toast.success("New OTP sent!", { position: "top-center" });
+        setOtp(["", "", "", "", "", ""]);
+        setTimeLeft(300);
+        setResendCooldown(50);
+        inputRefs.current[0]?.focus();
+      }
+    } catch (err) {
+      toast.error("Failed to resend OTP. Try again later.", {
+        position: "top-center",
+      });
     }
   };
 
   const handleClose = () => {
     setOtp(["", "", "", "", "", ""]);
-    onClose(); // ✅ actually closes the modal
-  };
-
-
-  const handleResend = async () => {
-    if (resendCooldown > 0) return;
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASE_URL}/api/users/resend-otp`,
-      { email }
-    );
-    if(response.status === 200) {
-    toast.success('New OTP sent!', { position: 'top-center' });
-    setTimeLeft(300);
-    setResendCooldown(50); // ✅ start cooldown
-    inputRefs.current[0]?.focus();
-    }
-
-    setOtp(['', '', '', '', '', '']);
-    
+    onClose();
   };
 
   return (
@@ -142,10 +140,10 @@ export default function OtpSection({ email, onClose, onVerified }) {
 
         {/* Description */}
         <p className="text-gray-600 mb-8 text-center">
-          We've sent a 6-digit verification code to your email
+          We've sent a 6-digit verification code to <b>{email}</b>
         </p>
 
-        {/* OTP Input Boxes */}
+        {/* OTP Inputs */}
         <div className="flex justify-center gap-3 mb-8">
           {otp.map((digit, index) => (
             <input
@@ -171,13 +169,11 @@ export default function OtpSection({ email, onClose, onVerified }) {
           >
             Verify OTP
           </button>
-          
+
           <div className="text-center">
             <span className="text-gray-600">Didn't receive the code? </span>
             {resendCooldown > 0 ? (
-              <span className="text-gray-400">
-                Resend in {resendCooldown}s
-              </span>
+              <span className="text-gray-400">Resend in {resendCooldown}s</span>
             ) : (
               <button
                 onClick={handleResend}
@@ -203,6 +199,5 @@ export default function OtpSection({ email, onClose, onVerified }) {
         </div>
       </div>
     </div>
-
   );
 }

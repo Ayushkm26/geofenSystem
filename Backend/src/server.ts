@@ -28,7 +28,7 @@ const prisma = new PrismaClient().$extends(withAccelerate());
 
 
 app.use(cors({
-  origin: ["https://geofen-system.vercel.app"], // your frontend domain
+  origin: ["https://geofen-system.vercel.app", "http://localhost:5173"], // your frontend domain
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -47,7 +47,7 @@ const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   path: "/api/socket.io",
   cors: {
-    origin: ["https://geofen-system.vercel.app"],
+    origin: ["https://geofen-system.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   },

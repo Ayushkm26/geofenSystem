@@ -9,7 +9,13 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { verifyToken } from "./userControllers";
 import { prisma } from "../server";
 import { Socket } from "socket.io";
-
+import generateOTP  from "../utils/generateOtp";
+import {transporter} from "../utils/mail";
+import {generateOtpEmailHtml} from "../utils/mail"
+import { createClient } from "redis";
+const redis = createClient({ url: process.env.REDIS_URL });
+redis.on("error", (err) => console.error("Redis Client Error", err));
+(async () => await redis.connect())();
 
 export const createAdmin = async (req: Request, res: Response) => {
     const prisma = new PrismaClient().$extends(withAccelerate());
@@ -17,33 +23,33 @@ export const createAdmin = async (req: Request, res: Response) => {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });    
     }
-    try {
-        const { name, email ,password} = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: 'Name, email, and password are required' });
-        }
-        if (await prisma.admin.findFirst({ where: { email } })) {
-            return res.status(400).json({ error: 'Admin with this email already exists' });
-        }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const admin = await prisma.admin.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,       
-            },
-        });
-         const access = signAccessToken({ sub: admin.id , role: admin.role });
-         const refresh = signRefreshToken({ sub: admin.id , role: admin.role });
-
-                const accessExp = new Date(Date.now() + 1*24*60*60*1000); // 1d
-                const refreshExp = new Date(Date.now() + 7*24*60*60*1000); // 7d
-                await persistToken(access, admin.id, "ACCESS", accessExp);
-                await persistToken(refresh, admin.id, "REFRESH", refreshExp);
-        res.status(201).json({ admin: { ...admin, password: undefined }, access,refresh });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create admin' });
-    }
+    const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email, and password are required' });
+ try {
+     const existingAdmin = await prisma.admin.findUnique({ where: { email } });
+     if (existingAdmin) return res.status(400).json({ error: 'Admin with this email already exists' });
+      const otp=generateOTP();
+ 
+     const hashedPassword = await bcrypt.hash(password, 10);
+     await redis.set(`signup:${email}`, JSON.stringify({ name, email, hashedPassword }), { EX: 300 })
+      await redis.set(`otp:${email}`, otp, { EX: 300 });
+     await transporter.sendMail({
+     from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+     to: email,
+     subject: "Verify Your Email",
+     text: `Your OTP is ${otp}. It expires in 5 minutes.`,
+     html: generateOtpEmailHtml({
+     appName: "GeoFence System",
+     otp,
+     expiryMinutes: 5,
+     supportEmail: "support@geofencesystem.com"
+   })
+   });
+     res.status(201).json({ message: "OTP sent to email. Please verify to complete signup." }); 
+   } catch (error) {
+     console.error(error);
+     res.status(500).json({ error: 'Failed to create Admin' });
+   }
 }
 export const loginAdmin = async (req: Request, res: Response) => {
     const prisma = new PrismaClient().$extends(withAccelerate());
@@ -79,7 +85,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
 }
 export const logoutAdmin = async (req: Request, res: Response) => {
      let token: string | undefined;
-
+  console.log("Logging out admin");
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
@@ -133,7 +139,7 @@ export const addGeofence = async (socket: Socket, data: any) => {
     const { name, latitude, longitude, radius } = data;
     console.log(radius)
     const coordinates = createGeofenceArea(longitude, latitude, radius);
-    
+
     const geofenceData: any = {
       name,
       type: coordinates.type,
@@ -249,5 +255,124 @@ export const verifyTokenforAdmin = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Failed to verify token" });
+    }
+}
+
+export const  verifyAdminAfterCreate=async(req:Request,res:Response)=>{
+      const { email, otp } = req.body;
+     
+       const storedOtp = await redis.get(`otp:${email}`);
+       const pendingUser = await redis.get(`signup:${email}`);
+      
+       if (!storedOtp || !pendingUser) {
+         return res.status(400).json({ message: "OTP expired or no signup request found" });
+       }
+     
+       if (storedOtp !== otp) {
+         return res.status(400).json({ message: "Invalid OTP" });
+       }
+       const {name,hashedPassword} =JSON.parse(pendingUser);
+       const admin = await prisma.admin.create({ data: { name, email, password: hashedPassword } });
+
+         const access = signAccessToken({ sub: admin.id, role: admin.role, email: admin.email });
+         const refresh = signRefreshToken({ sub: admin.id, role: admin.role, email: admin.email });
+         await persistToken(access, admin.id, "ACCESS", new Date(Date.now() + 24*60*60*1000));
+         await persistToken(refresh, admin.id, "REFRESH", new Date(Date.now() + 7*24*60*60*1000));
+          // Clean Redis
+         await redis.del(`otp:${email}`);
+         await redis.del(`signup:${email}`);
+         res.status(200).json({ admin: { ...admin, password: undefined }, access, refresh });
+}
+export const resendAdminOtp=async(req:Request,res:Response)=>{
+   try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+  
+      // Check Redis for existing OTP
+      let otp = await redis.get(`otp:${email}`);
+  
+      if (!otp) {
+        otp = generateOTP();
+        await redis.set(`otp:${email}`, otp, { EX: 300 });
+      }
+  
+       await transporter.sendMail({
+      from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: "Your new OTP Code",
+      text: `Your OTP is ${otp}. It expires in 5 minutes.`,
+      html: generateOtpEmailHtml({
+      appName: "GeoFence System",
+      otp,
+      expiryMinutes: 5,
+      supportEmail: "support@geofencesystem.com"
+    })
+    });
+  
+      return res.status(200).json({ message: "OTP resent successfully" });
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      return res.status(500).json({ error: "Failed to resend OTP" });
+    }
+}
+export const forgotAdminPassword=async(req:Request,res:Response)=>{
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: "Email is required" });
+      const admin = await prisma.admin.findUnique({ where: { email } });
+      if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+      const otp = generateOTP();
+      await redis.set(`forgot-password:${email}`, otp, { EX: 300 });
+  
+      await transporter.sendMail({
+        from: `"GeoFence System" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: "Password Reset OTP",
+        text: `Your password reset OTP is ${otp}. It expires in 5 minutes.`,
+        html: generateOtpEmailHtml({
+          appName: "GeoFence System",
+          otp,
+          expiryMinutes: 5,
+          supportEmail: "support@geofencesystem.com"
+        })
+      });
+  
+      return res.status(200).json({ message: "Password reset OTP sent successfully" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      return res.status(500).json({ error: "Failed to send password reset OTP" });
+    }
+}
+export const resetAdminPassword=async(req:Request,res:Response)=>{
+    try {
+      const { email, otp, newPassword } = req.body;
+      if (!email || !otp || !newPassword) {
+        return res.status(400).json({ error: "Email, OTP, and new password are required" });
+      }
+  
+      const storedOtp = await redis.get(`forgot-password:${email}`);
+      if (!storedOtp) {
+        return res.status(400).json({ error: "OTP expired or no reset request found" });
+      }
+  
+      if (storedOtp !== otp) {
+        return res.status(400).json({ error: "Invalid OTP" });
+      }
+  
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await prisma.admin.update({
+        where: { email },
+        data: { password: hashedPassword }
+      });
+  
+      await redis.del(`forgot-password:${email}`);
+  
+      return res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      return res.status(500).json({ error: "Failed to reset password" });
     }
 }

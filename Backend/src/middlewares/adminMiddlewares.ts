@@ -62,3 +62,4 @@ export async function authAdminMiddleware(req: Request, res: Response, next: Nex
     return res.status(401).json({error: "Invalid token"});
   }
 }
+

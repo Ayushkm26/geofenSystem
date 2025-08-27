@@ -168,7 +168,7 @@ const handleForgotPassword = async () => {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                disabled={!email || !password}
+                disabled={!email}
                 className="px-6 py-3 bg-blue-400 text-white font-semibold rounded-lg shadow-md hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 mt-4 transition-all duration-300 w-full"
               >
                 Forgot Password?

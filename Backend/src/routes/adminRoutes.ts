@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addGeofenceHttp, createAdmin, loginAdmin,logoutAdmin} from "../controllers/adminControllers";
+import { addGeofenceHttp, createAdmin, loginAdmin,logoutAdmin,verifyAdminAfterCreate,resendAdminOtp, forgotAdminPassword, resetAdminPassword} from "../controllers/adminControllers";
 import { authAdminMiddleware } from "../middlewares/adminMiddlewares";
 import { body } from 'express-validator';
 import { verify } from "crypto";
@@ -21,4 +21,8 @@ router.post("/addGeofence", authAdminMiddleware, addGeofenceHttp);
 // router.get("/getGeofence/:id", authAdminMiddleware, getGeofenceDetails);
 // router.put("/updateGeofence/:id", authAdminMiddleware, updateGeofence);
 router.get("/verify-token", authAdminMiddleware, verifyTokenforAdmin);
+router.post("/after-verify", verifyAdminAfterCreate);
+router.post("/resend-otp", resendAdminOtp);
+router.post("/forgot-password", forgotAdminPassword);
+router.post("/reset-password", resetAdminPassword);
 export default router;

@@ -3,7 +3,7 @@ import { X, Eye, EyeOff, Lock, Shield, CheckCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
-export default function PasswordResetForm({ email, onClose }) {
+export default function PasswordResetForm({ email, onClose, type = "user" }) {
   const [step, setStep] = useState(1); // 1: OTP, 2: Password
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [password, setPassword] = useState('');
@@ -97,7 +97,7 @@ export default function PasswordResetForm({ email, onClose }) {
   const handleResend = () => {
     if (resendCooldown > 0) return;
     
-    alert('New OTP sent!');
+    toast.info('New OTP sent!');
     setOtp(['', '', '', '', '', '']);
     setTimeLeft(300);
     setResendCooldown(50);
@@ -113,10 +113,6 @@ export default function PasswordResetForm({ email, onClose }) {
     }
     
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    if (confirmPassword && password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -148,9 +144,13 @@ export default function PasswordResetForm({ email, onClose }) {
       };
 
       console.log('Sending to backend:', requestData);
-      
-      // Replace this with your actual API endpoint
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/users/reset-password`, {
+
+      // ✅ choose endpoint based on type
+      const endpoint = type === "admin" 
+        ? `${import.meta.env.VITE_BASE_URL}/api/admins/reset-password`
+        : `${import.meta.env.VITE_BASE_URL}/api/users/reset-password`;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export default function PasswordResetForm({ email, onClose }) {
 
       if (response.ok) {
         const result = await response.json();
-        navigate('/userlogin');
+        navigate(type === "admin" ? '/adminlogin' : '/userlogin');
         toast.success(result.message || 'Password reset successfully!');
         onClose(); // Close the form
       } else {
