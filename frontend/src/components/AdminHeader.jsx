@@ -64,27 +64,27 @@ const AdminHeader = () => {
 
   return (
     <header>
-      <nav className="bg-gray-100 px-4 lg:px-6 py-2.5 w-full border-b border-green-400">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <button
-            onClick={() => handleNavigation("/admindashboard")}
-            className="flex items-center space-x-2 focus:outline-none"
-          >
-            <img
-              src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
-              className="h-10 w-auto"
-              alt="Logo"
-            />
-            <span className="text-xl font-semibold text-gray-800">
-              GeoFence System
-            </span>
-          </button>
+      <nav className="bg-gray-100 px-4 lg:px-6 py-1.5 w-full border-b border-green-400">
+  <div className="flex justify-between items-center h-12"> {/* reduced from h-16 */}
+    {/* Logo */}
+    <button
+      onClick={() => handleNavigation("/admindashboard")}
+      className="flex items-center space-x-2 focus:outline-none"
+    >
+      <img
+        src="https://imgs.search.brave.com/YVLjeEqEj-qfq78AiKd_8whXU8n29tC8dR6_cdfqhZ4/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wMjcv/MTc5LzQwMC9zbWFs/bC9sb2NhdGlvbi1t/YXAtYWRkcmVzcy1p/Y29uLXN5bWJvbC1m/cmVlLXBuZy5wbmc"
+        className="h-8 w-auto" // reduced from h-10
+        alt="Logo"
+      />
+      <span className="text-lg font-semibold text-gray-800"> {/* reduced from text-xl */}
+        GeoFence System
+      </span>
+    </button>
 
           {/* Desktop */}
           <div className="hidden sm:flex items-center space-x-4 ">
-           <p
-  className={`border rounded-lg px-4 py-2 font-bold text-lg 
+ <p
+  className={`border rounded-lg px-3 py-1.5 font-bold text-sm 
     ${
       activeSubscriptionDate === "Free plan"
         ? "bg-gray-200 border-gray-400 text-gray-800"
