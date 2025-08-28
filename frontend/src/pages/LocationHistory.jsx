@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DashboardHeader from "../components/DashboardHeader";
 import { Spinner } from "../components/Spinner";
+import Footer from "../components/Footers";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
@@ -146,7 +147,9 @@ export default function LocationHistory() {
         ) : (
           <VisitTable visits={visits} />
         )}
+        <Footer />
       </div>
+      
     </>
   );
 }

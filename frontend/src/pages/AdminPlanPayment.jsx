@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AdminHeader from '../components/AdminHeader';
 import { toast } from 'react-toastify';
+import Footer from '../components/Footers';
 function AdminPlanPayment() {
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [plans , setPlans] = useState([]);
@@ -300,7 +301,11 @@ const handlePlanSelect = async (planId, planName) => {
           </div>
         </div>
       </div>
+      
     </div>
+     <footer className="py-4 bg-gray-800 text-gray-300 text-center">
+        © {new Date().getFullYear()} GeoFence Tracker. All rights reserved.
+      </footer>
     </>
   );
 }

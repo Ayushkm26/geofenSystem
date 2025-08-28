@@ -18,47 +18,44 @@ import AdminPlanPayment from './pages/AdminPlanPayment';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ContactUs from './components/ContactUs';
 import AboutPage from './pages/AboutPage';
+import PageNotFound from './components/PageNotFound';
 function App() {
 
   return (
-  
-   <>
-   <Routes>
-     <Route path="/" element={<Homepage />} />
-     <Route path="/userlogin" element={<UserLoginPage />} />
-     <Route path="/usersignup" element={<UserSignupPage />} />
-     <Route path="/userdashboard" element={<UserProtectedWrapper><Dashboard/></UserProtectedWrapper>} />
-      <Route path="/userlogout" element={<UserProtectedWrapper><UserLogout /></UserProtectedWrapper>} />
-      <Route path="/locationhistory" element={<UserProtectedWrapper><LocationHistory /></UserProtectedWrapper>} />
-      <Route path="/adminlogin" element={<AdminLoginPage />} />
-      <Route path="/adminsignup" element={<AdminSignupPage />} />
-      <Route 
-  path="/adminplanpayment" 
-  element={
-    <AdminProtectedWrapper requireActive={false}>
-      <AdminPlanPayment />
-    </AdminProtectedWrapper>
-  } 
-/>  
-
-<Route 
-  path="/admindashboard" 
-  element={
-    <AdminProtectedWrapper requireActive={true}>
-      <AdminDashboard />
-    </AdminProtectedWrapper>
-  } 
-/>  
-
-<Route path="/adminlogout" element={<AdminLogout />} />
-  <Route path='/privacy-policy' element={<PrivacyPolicyPage />} />
-  <Route path='/contact-us' element={<ContactUs />} />
-  <Route path='/about' element={<AboutPage />} />
-
-   </Routes>
-
-
-  </>
+    <>
+      <Routes>
+        <Route path="/" element={<Homepage />} />
+        <Route path="/userlogin" element={<UserLoginPage />} />
+        <Route path="/usersignup" element={<UserSignupPage />} />
+        <Route path="/userdashboard" element={<UserProtectedWrapper><Dashboard/></UserProtectedWrapper>} />
+        <Route path="/userlogout" element={<UserProtectedWrapper><UserLogout /></UserProtectedWrapper>} />
+        <Route path="/locationhistory" element={<UserProtectedWrapper><LocationHistory /></UserProtectedWrapper>} />
+        <Route path="/adminlogin" element={<AdminLoginPage />} />
+        <Route path="/adminsignup" element={<AdminSignupPage />} />
+        <Route 
+          path="/adminplanpayment" 
+          element={
+            <AdminProtectedWrapper requireActive={false}>
+              <AdminPlanPayment />
+            </AdminProtectedWrapper>
+          } 
+        />  
+        <Route 
+          path="/admindashboard" 
+          element={
+            <AdminProtectedWrapper requireActive={true}>
+              <AdminDashboard />
+            </AdminProtectedWrapper>
+          } 
+        />  
+        <Route path="/adminlogout" element={<AdminLogout />} />
+        <Route path='/privacy-policy' element={<PrivacyPolicyPage />} />
+        <Route path='/contact-us' element={<ContactUs />} />
+        <Route path='/about' element={<AboutPage />} />
+        {/* 404 Page Not Found Route */}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </>
   )
 }
 

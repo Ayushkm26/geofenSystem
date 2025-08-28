@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Quote } from "../components/Quote";
+import FeaturesShowcase from "../components/FeaturesShowcase";
 import Header from "../components/Headers";
 import Footer from "../components/Footers";
 import { UserDataContext } from "../Context/UserContext";
@@ -147,7 +147,7 @@ export default function UserSignupPage() {
 
         {/* Quote Section */}
         <div className="hidden lg:block bg-gray-50">
-          <Quote />
+          <FeaturesShowcase />
         </div>
       </div>
 

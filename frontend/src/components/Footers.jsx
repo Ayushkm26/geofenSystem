@@ -2,9 +2,9 @@ import React from "react";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-100 rounded-lg shadow-sm m-4 dark:bg-gray-800">
-      <div className="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
-        <span className="text-sm text-black sm:text-center dark:text-white ">
+    <footer className="fixed bottom-0 w-full bg-gray-100 dark:bg-gray-800 shadow-lg h-16">
+      <div className="w-full mx-auto max-w-screen-xl p-4 flex flex-col md:flex-row items-center justify-between h-full">
+        <span className="text-sm text-black dark:text-white text-center md:text-left">
           ©{new Date().getFullYear()}{" "}
           <a
             href="https://github.com/Ayushkm26"
@@ -12,22 +12,21 @@ export default function Footer() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            AyushMishra
+            GeoFenceSystems
           </a>
           . All Rights Reserved.
         </span>
-        <ul className="flex flex-wrap items-center mt-3 text-sm font-medium text-black dark:text-black sm:mt-0">
+        <ul className="flex flex-wrap items-center mt-2 md:mt-0 text-sm font-medium text-black dark:text-white gap-4 md:gap-6 justify-center md:justify-end">
           <li>
-            <a href="/about" className="hover:underline me-4 md:me-6">
+            <a href="/about" className="hover:underline">
               About
             </a>
           </li>
           <li>
-            <a href="/privacy-policy" className="hover:underline me-4 md:me-6">
+            <a href="/privacy-policy" className="hover:underline">
               Privacy Policy
             </a>
           </li>
-         
           <li>
             <a href="/contact-us" className="hover:underline">
               Contact

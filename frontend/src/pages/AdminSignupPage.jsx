@@ -2,9 +2,10 @@ import React, { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import Footer from "../components/Footers";
 
 import Headers from "../components/Headers";
-import { Quote } from "../components/Quote";
+import  FeaturesShowcase from "../components/FeaturesShowcase";
 import { Spinner } from "../components/Spinner";
 import { AdminDataContext } from "../Context/AdminContex";
 import OtpSection from "../components/OtpSection";
@@ -129,7 +130,7 @@ function AdminSignupPage() {
 
         {/* Quote Section */}
         <div className="hidden lg:block bg-gray-50">
-          <Quote />
+          <FeaturesShowcase />
         </div>
       </div>
 
@@ -155,6 +156,7 @@ function AdminSignupPage() {
           }}
         />
       )}
+      <Footer />
     </div>
   );
 }

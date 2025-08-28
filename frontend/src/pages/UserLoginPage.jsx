@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Quote } from "../components/Quote";
+import FeaturesShowcase from "../components/FeaturesShowcase";
 import Header from "../components/Headers";
 import Footer from "../components/Footers";
 import { UserDataContext } from "../Context/UserContext";
@@ -8,6 +8,7 @@ import axios from "axios";
 import { Spinner } from "../components/Spinner";
 import { toast } from 'react-toastify';
 import PasswordResetForm from "../components/PasswordResetForm";
+import AuthImagePattern from "../components/AuthImagePattern";
 function UserLoginPage() {
   const navigate = useNavigate();
   const { setUser } = useContext(UserDataContext);
@@ -191,12 +192,12 @@ const handleForgotPassword = async () => {
        
         {/* Quote Section */}
         <div className="hidden lg:block bg-gray-50">
-          <Quote />
+          <AuthImagePattern title="Secure Your Account" subtitle="Protect your data with our advanced security features." />
         </div>
       </div>
 
       {/* Footer */}
-      
+      <Footer />
     </div>
   );
 

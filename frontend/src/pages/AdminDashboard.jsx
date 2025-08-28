@@ -10,6 +10,7 @@ import CreateGeofence from '../components/CreateGeofence';
 import { io } from 'socket.io-client';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Footer from '../components/Footers';
 
 
 const SOCKET_URL = `${import.meta.env.VITE_BASE_URL}/admin`;
@@ -195,7 +196,7 @@ newSocket.on('geofence-deleted', (deletedId) => {
         />
       )}
       <ToastContainer position="top-right" autoClose={3000} />
-
+      <Footer />
     </>
     
   );

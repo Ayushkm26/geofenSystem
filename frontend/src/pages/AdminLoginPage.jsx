@@ -2,7 +2,7 @@ import React from 'react'
 import Headers from '../components/Headers';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Quote } from '../components/Quote';
+import FeaturesShowcase from '../components/FeaturesShowcase';
 import { toast } from 'react-toastify';
 import { Spinner } from '../components/Spinner';
 import axios from 'axios';
@@ -10,8 +10,9 @@ import { AdminDataContext } from '../Context/AdminContex'; // Importing AdminDat
 import { useContext } from 'react';
 import { useEffect } from 'react';
 
-
 import PasswordResetForm from '../components/PasswordResetForm';
+import AuthImagePattern from '../components/AuthImagePattern';
+import Footer from '../components/Footers';
 function AdminLoginPage() {
 
     const [email, setEmail] = React.useState("");
@@ -186,14 +187,12 @@ function AdminLoginPage() {
 
         {/* Quote Section */}
         <div className="hidden lg:block bg-gray-50">
-          <Quote />
+         <AuthImagePattern title="Secure Your Account" subtitle="Protect your data with our advanced security features." />
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="py-4 bg-gray-800 text-gray-300 text-center">
-        © {new Date().getFullYear()} GeoFence Tracker. All rights reserved.
-      </footer>
+      <Footer />
     </div>
   
   )
