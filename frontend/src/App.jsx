@@ -14,6 +14,10 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminProtectedWrapper from './pages/AdminProtectedWrapper';
 import AdminLogout from './pages/AdminLogout';
 import OtpSection from './components/OtpSection';
+import AdminPlanPayment from './pages/AdminPlanPayment';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import ContactUs from './components/ContactUs';
+import AboutPage from './pages/AboutPage';
 function App() {
 
   return (
@@ -28,10 +32,33 @@ function App() {
       <Route path="/locationhistory" element={<UserProtectedWrapper><LocationHistory /></UserProtectedWrapper>} />
       <Route path="/adminlogin" element={<AdminLoginPage />} />
       <Route path="/adminsignup" element={<AdminSignupPage />} />
-      <Route path="/admindashboard" element={<AdminProtectedWrapper><AdminDashboard /></AdminProtectedWrapper>} />
-      <Route path="/adminlogout" element={<AdminProtectedWrapper><AdminLogout /></AdminProtectedWrapper>} />
+      <Route 
+  path="/adminplanpayment" 
+  element={
+    <AdminProtectedWrapper requireActive={false}>
+      <AdminPlanPayment />
+    </AdminProtectedWrapper>
+  } 
+/>  
+
+<Route 
+  path="/admindashboard" 
+  element={
+    <AdminProtectedWrapper requireActive={true}>
+      <AdminDashboard />
+    </AdminProtectedWrapper>
+  } 
+/>  
+
+<Route path="/adminlogout" element={<AdminLogout />} />
+  <Route path='/privacy-policy' element={<PrivacyPolicyPage />} />
+  <Route path='/contact-us' element={<ContactUs />} />
+  <Route path='/about' element={<AboutPage />} />
+
    </Routes>
-   </>
+
+
+  </>
   )
 }
 

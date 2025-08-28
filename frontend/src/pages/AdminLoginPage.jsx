@@ -9,6 +9,8 @@ import axios from 'axios';
 import { AdminDataContext } from '../Context/AdminContex'; // Importing AdminDataContext
 import { useContext } from 'react';
 import { useEffect } from 'react';
+
+
 import PasswordResetForm from '../components/PasswordResetForm';
 function AdminLoginPage() {
 
@@ -38,10 +40,11 @@ function AdminLoginPage() {
                
                 localStorage.setItem("token", createdUser.access);
                 setLoading(false);
-                navigate("/admindashboard");
-                toast.success("Login successful!", {
+                  toast.success("Login successful!", {
                     position: "bottom-center"
                 });
+                navigate("/admindashboard");
+              
             }
         } catch (error) {
             console.error("Error during login:", error);
@@ -191,8 +194,8 @@ function AdminLoginPage() {
       <footer className="py-4 bg-gray-800 text-gray-300 text-center">
         © {new Date().getFullYear()} GeoFence Tracker. All rights reserved.
       </footer>
-
     </div>
+  
   )
 }
 

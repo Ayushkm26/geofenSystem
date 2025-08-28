@@ -8,15 +8,36 @@ datasource db {
 }
 
 model Admin {
-  id        String         @id @default(uuid())
-  email     String         @unique
-  name      String
-  password  String
-  role      String         @default("ADMIN")
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  geofences GeoFenceArea[]
+  id                String   @id @default(uuid())
+  email             String   @unique
+  name              String
+  password          String
+  role              String   @default("ADMIN")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  geofences         GeoFenceArea[]
+
+  // Subscription fields (optional now)
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+  subscriptionPlanId String?
+
+  subscriptionStart  DateTime? 
+  subscriptionEnd    DateTime?
+  isActive           Boolean          @default(false)
 }
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  price        Float
+  currency     String   @default("INR")
+  durationDays Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  admins       Admin[]
+}
+
 
 model User {
   id            String         @id @default(uuid())

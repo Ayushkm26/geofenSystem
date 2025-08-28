@@ -18,18 +18,18 @@ export default function Footer() {
         </span>
         <ul className="flex flex-wrap items-center mt-3 text-sm font-medium text-black dark:text-black sm:mt-0">
           <li>
-            <a href="#" className="hover:underline me-4 md:me-6">
+            <a href="/about" className="hover:underline me-4 md:me-6">
               About
             </a>
           </li>
           <li>
-            <a href="#" className="hover:underline me-4 md:me-6">
+            <a href="/privacy-policy" className="hover:underline me-4 md:me-6">
               Privacy Policy
             </a>
           </li>
          
           <li>
-            <a href="" className="hover:underline">
+            <a href="/contact-us" className="hover:underline">
               Contact
             </a>
           </li>

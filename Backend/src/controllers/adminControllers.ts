@@ -52,37 +52,71 @@ export const createAdmin = async (req: Request, res: Response) => {
    }
 }
 export const loginAdmin = async (req: Request, res: Response) => {
-    const prisma = new PrismaClient().$extends(withAccelerate());
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-  
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-    try {
-        const admin = await prisma.admin.findFirst({ where: { email } });
-        if (!admin) {
-            return res.status(400).json({ error: 'Invalid email or password' });
-        }
-        const isMatch = await bcrypt.compare(password, admin.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid email or password' });
-        }
-         const access = signAccessToken({ sub: admin.id , role: admin.role });
-         const refresh = signRefreshToken({ sub: admin.id , role: admin.role });
+  const prisma = new PrismaClient().$extends(withAccelerate());
+  const errors = validationResult(req);
 
-                const accessExp = new Date(Date.now() + 1*24*60*60*1000); // 1d
-                const refreshExp = new Date(Date.now() + 7*24*60*60*1000); // 7d
-                await persistToken(access, admin.id, "ACCESS", accessExp);
-                await persistToken(refresh, admin.id, "REFRESH", refreshExp);
-        res.status(201).json({ admin: { ...admin, password: undefined }, access,refresh });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to log in admin' });
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    const admin = await prisma.admin.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        isActive: true,
+        subscriptionStart: true,
+        subscriptionEnd: true, // 👈 make sure we pull these
+      },
+    });
+
+    if (!admin) {
+      return res.status(400).json({ error: "Invalid email or password" });
     }
-}
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // 👇 Include subscription dates in JWT payload
+    const payload = {
+      sub: admin.id,
+      role: admin.role,
+      email: admin.email,
+      isActive: admin.isActive,
+      subscriptionStart: admin.subscriptionStart,
+      subscriptionEnd: admin.subscriptionEnd,
+    };
+
+    const access = signAccessToken(payload);
+    const refresh = signRefreshToken(payload);
+
+    const accessExp = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000); // 1 day
+    const refreshExp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await persistToken(access, admin.id, "ACCESS", accessExp);
+    await persistToken(refresh, admin.id, "REFRESH", refreshExp);
+
+    res.status(201).json({
+      admin: { ...admin, password: undefined },
+      access,
+      refresh,
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Failed to log in admin" });
+  }
+};
+
 export const logoutAdmin = async (req: Request, res: Response) => {
      let token: string | undefined;
   console.log("Logging out admin");
@@ -246,7 +280,7 @@ export const verifyTokenforAdmin = async (req: Request, res: Response) => {
 
         const adminDetails = await prisma.admin.findUnique({
             where: { id: adminId },
-            select: { id: true, name: true, email: true, role: true }
+            select: { id: true, name: true, email: true, role: true ,isActive:true,subscriptionEnd:true}
         });
 
         if (!adminDetails) return res.status(404).json({ error: "Admin not found" });
@@ -274,13 +308,27 @@ export const  verifyAdminAfterCreate=async(req:Request,res:Response)=>{
        const {name,hashedPassword} =JSON.parse(pendingUser);
        const admin = await prisma.admin.create({ data: { name, email, password: hashedPassword } });
 
-         const access = signAccessToken({ sub: admin.id, role: admin.role, email: admin.email });
-         const refresh = signRefreshToken({ sub: admin.id, role: admin.role, email: admin.email });
-         await persistToken(access, admin.id, "ACCESS", new Date(Date.now() + 24*60*60*1000));
-         await persistToken(refresh, admin.id, "REFRESH", new Date(Date.now() + 7*24*60*60*1000));
-          // Clean Redis
-         await redis.del(`otp:${email}`);
-         await redis.del(`signup:${email}`);
+            const access = signAccessToken({
+      sub: admin.id,
+      role: admin.role,
+      email: admin.email,
+      isActive: admin.isActive,
+      subscriptionEnd: admin.subscriptionEnd,
+      subscriptionStart: admin.subscriptionStart,
+    });
+    const refresh = signRefreshToken({
+      sub: admin.id,
+      role: admin.role,
+      email: admin.email,
+      isActive: admin.isActive,
+      subscriptionEnd: admin.subscriptionEnd,
+      subscriptionStart: admin.subscriptionStart,
+    });
+    await persistToken(access, admin.id, "ACCESS", new Date(Date.now() + 24*60*60*1000),);
+    await persistToken(refresh, admin.id, "REFRESH", new Date(Date.now() + 7*24*60*60*1000));
+    // Clean Redis
+    await redis.del(`otp:${email}`);
+    await redis.del(`signup:${email}`);
          res.status(200).json({ admin: { ...admin, password: undefined }, access, refresh });
 }
 export const resendAdminOtp=async(req:Request,res:Response)=>{
@@ -374,5 +422,16 @@ export const resetAdminPassword=async(req:Request,res:Response)=>{
     } catch (error) {
       console.error("Reset password error:", error);
       return res.status(500).json({ error: "Failed to reset password" });
+    }
+}
+export const getAllPlans=async(req:Request,res:Response)=>{
+   try {
+        const plans = await prisma.subscriptionPlan.findMany({
+            select: { id: true, name: true, price: true, currency: true, durationDays: true }
+        });
+        res.status(200).json({ plans });
+    } catch (error) {
+        console.error("Get all plans error:", error);
+        res.status(500).json({ error: "Failed to fetch subscription plans" });
     }
 }

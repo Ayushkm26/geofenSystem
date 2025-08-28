@@ -172,7 +172,6 @@ adminNamespace.on("connection", (socket) => {
   });
 });
 
-
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Socket.IO available at ${process.env.CLIENT_URL}/api/socket.io`);

@@ -14,7 +14,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 const SOCKET_URL = `${import.meta.env.VITE_BASE_URL}/admin`;
 
-const AdminDashboard = () => {
+const AdminDashboard = ({type}) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

@@ -32,7 +32,7 @@ const UserLogout = () => {
       } finally {
         // ✅ First clear token, then redirect
         localStorage.removeItem("token");
-        localStorage.removeItem("user"); // if you store user details
+        localStorage.removeItem("user"); 
         toast.success("Logout successful!", { position: "bottom-center" });
 
         // Delay navigation slightly to let toast show & request finish

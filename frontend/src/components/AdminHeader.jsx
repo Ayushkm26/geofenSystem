@@ -1,13 +1,34 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext, use } from "react";
 import { AdminDataContext } from "../Context/AdminContex";
 import { useNavigate } from "react-router-dom";
-
+import {jwtDecode} from "jwt-decode";
 const AdminHeader = () => {
   const { admin } = useContext(AdminDataContext);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+  const [activeSubscriptionDate, setActiveSubscriptionDate] = useState("Free plan");
   // Separate refs for desktop and mobile dropdowns
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        console.log("Decoded token:", decoded);
+        console.log(decoded.subscriptionEnd);
+        // decoded contains whatever you signed in your backend
+        // e.g. { sub, role, email, isActive, subscriptionStart, subscriptionEnd }
+        if (decoded.subscriptionEnd) {
+          const endDate = new Date(decoded.subscriptionEnd);
+          setActiveSubscriptionDate(` Valid till: ${endDate.toDateString()}`);
+        } else {
+          setActiveSubscriptionDate("Free plan");
+        }
+      } catch (err) {
+        console.error("Invalid token:", err);
+        setActiveSubscriptionDate("Free plan");
+      }
+    }
+  }, [admin]);  
   const desktopDropdownRef = useRef(null);
   const mobileDropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -61,10 +82,17 @@ const AdminHeader = () => {
           </button>
 
           {/* Desktop */}
-          <div className="hidden sm:flex items-center space-x-4">
-            <p>
-              <strong className="text-gray-800 font-bold">Free</strong>
-            </p>
+          <div className="hidden sm:flex items-center space-x-4 ">
+           <p
+  className={`border rounded-lg px-4 py-2 font-bold text-lg 
+    ${
+      activeSubscriptionDate === "Free plan"
+        ? "bg-gray-200 border-gray-400 text-gray-800"
+        : "bg-green-500 border-green-600 text-white"
+    }`}
+>
+  {activeSubscriptionDate}
+</p>
             <div ref={desktopDropdownRef} className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
