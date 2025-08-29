@@ -9,7 +9,6 @@ function Cards( { isShared, setIsShared }) {
   const [outside, setOutside] = useState(false);
   const { geofenceLocation, setGeofenceLocation } = useContext(LocationContext);
 
-  // Initialize socket once
 useEffect(() => {
   const newSocket = io(`${import.meta.env.VITE_BASE_URL}`, {
     path: "/api/socket.io",
@@ -20,21 +19,26 @@ useEffect(() => {
 
   setSocket(newSocket);
 
-  // Handle geofence details
+  // Handle geofence details (inside or switched)
   newSocket.on("geofence-details", (data) => {
     console.log("Inside geofence:", data);
-    setGeofenceLocation(data);
+    setGeofenceLocation({
+      id: data?.id,
+      name: data?.name,
+      latitude: data?.latitude,
+      longitude: data?.longitude,
+    });
     setOutside(false);
   });
 
   // Handle outside geofence
   newSocket.on("outside-geofence", (data) => {
-    console.log("Outside geofence:", data);
-    setGeofenceLocation(
-      data ? { latitude: data.latitude, longitude: data.longitude } : null
-      
-    );
-    setOutside(true);
+     console.log("Outside geofence:", data);
+  setGeofenceLocation(data?.latitude != null && data?.longitude != null
+    ? { latitude: data.latitude, longitude: data.longitude }
+    : null
+  );
+  setOutside(true);
   });
 
   // Handle location errors
@@ -44,16 +48,16 @@ useEffect(() => {
     setOutside(false);
   });
 
-  // Request current geofence status on connect
-  //newSocket.on("connect", () => {
-    //console.log("Socket connected, requesting geofence status");
-   // newSocket.emit("get-current-geofence");
-  //});
-
+  // 🔹 Request current geofence on connect
+ newSocket.on("connect", () => {
+  console.log("Socket connected, requesting current geofence...");
+  newSocket.emit("get-current-geofence");
+});
   return () => {
     newSocket.disconnect();
   };
 }, []);
+
   // Handle location sharing
   useEffect(() => {
     if (!socket) return;
