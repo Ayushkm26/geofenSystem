@@ -86,7 +86,7 @@ const AdminHeader = () => {
  <p
   className={`border rounded-lg px-3 py-1.5 font-bold text-sm 
     ${
-      activeSubscriptionDate === "Free plan"
+      activeSubscriptionDate === "Buy Plans"
         ? "bg-gray-200 border-gray-400 text-gray-800"
         : "bg-green-500 border-green-600 text-white"
     }`}
