@@ -62,6 +62,7 @@ export function getDistanceFromLatLonInMeters(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
+  console.log("Distance:", distance);
 }
 
 /**
@@ -136,6 +137,6 @@ export async function checkIfInsideAnyFence(
   } else {
     await redis.del(cacheKey);
   }
-
+    
   return insideFences;
 }
