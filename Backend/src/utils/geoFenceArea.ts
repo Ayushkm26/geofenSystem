@@ -4,8 +4,19 @@ import { createClient } from "redis";
 const prisma = new PrismaClient();
 
 // 🔹 Setup Redis client (singleton)
-const redis = createClient();
-redis.connect().catch(console.error);
+
+export const redis = createClient({
+  url: process.env.REDIS_URL || "redis://127.0.0.1:6379", // fallback for local dev
+});
+
+redis.on("error", (err) => console.error("Redis Client Error", err));
+
+(async () => {
+  if (!redis.isOpen) {
+    await redis.connect();
+  }
+})();
+
 
 type GeofenceAreaParams = {
   latitude: number;
