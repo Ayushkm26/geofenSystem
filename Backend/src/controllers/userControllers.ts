@@ -48,7 +48,7 @@ const cacheAndGet = async (id: string) => {
 // ─── Handle Socket Updates (EXIT fixed) ─────────────────────────────────────
 export const handleSocketLocationUpdate = async (
   socket: Socket,
-  data: { latitude: number; longitude: number }
+  data: { latitude: number; longitude: number, visitorId?: string }
 ) => {
   try {
     const userId = socket.data?.user?.id;
@@ -58,7 +58,8 @@ export const handleSocketLocationUpdate = async (
       userId,
       socket.data.user.email,
       data.latitude,
-      data.longitude
+      data.longitude,
+      data.visitorId
     );
     socket.emit("location-response", result);
 

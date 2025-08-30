@@ -19,8 +19,13 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ContactUs from './components/ContactUs';
 import AboutPage from './pages/AboutPage';
 import PageNotFound from './components/PageNotFound';
+import ChatUI from './components/ChatUI';
+import { AdminDataContext } from "./Context/AdminContex";
+import { useContext } from 'react';
+import { newSocket } from './Context/socket';
+import { UserDataContext } from './Context/UserContext';
 function App() {
-
+  const { user } = useContext(UserDataContext);
   return (
     <>
       <Routes>

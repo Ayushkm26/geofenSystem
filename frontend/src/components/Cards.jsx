@@ -1,13 +1,31 @@
 import React, { useState, useEffect, useContext } from "react";
 import { io } from "socket.io-client";
 import { LocationContext } from "../Context/UserContext"; // adjust path
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 
 function Cards( { isShared, setIsShared }) {
   const [isSharing, setIsSharing] = useState(false);
   const [socket, setSocket] = useState(null);
   const [intervalId, setIntervalId] = useState(null);
+    const [visitorId, setVisitorId] = useState(null);
+
   const [outside, setOutside] = useState(false);
   const { geofenceLocation, setGeofenceLocation } = useContext(LocationContext);
+  useEffect(() => {
+    const generateVisitorId = async () => {
+      if (!localStorage.getItem("visitorId")) {
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        localStorage.setItem("visitorId", result.visitorId);
+        setVisitorId(result.visitorId);
+      } else {
+        setVisitorId(localStorage.getItem("visitorId"));
+      }
+    };
+    generateVisitorId();
+  }, []);
+
+
 
 useEffect(() => {
   const newSocket = io(`${import.meta.env.VITE_BASE_URL}`, {
@@ -78,6 +96,7 @@ useEffect(() => {
               latitude,
               longitude,
               timestamp: new Date(),
+              visitorId: visitorId,
             });
           },
           (error) => console.error("Error fetching location:", error.message),
@@ -85,12 +104,13 @@ useEffect(() => {
         );
       }, 5000);
 
+
       setIntervalId(id);
     } else if (intervalId !== null) {
       clearInterval(intervalId);
       setIntervalId(null);
 
-      socket.emit("stop-sharing", { timestamp: new Date() });
+      socket.emit("stop-sharing", { timestamp: new Date() , visitorId: visitorId });
       console.log("Sent stop-sharing event");
     }
 

@@ -3,6 +3,7 @@ import { prisma, io } from "../server";
 import { checkIfInsideAnyFence } from "../utils/geoFenceArea";
 import { sendGeofenceEventEmail } from "../utils/mail";
 import { Socket } from "socket.io";
+import { sendEmailAlert } from "../utils/mail";
 
 // ─── Redis Setup ───────────────────────────────
 const redis = createClient({ url: process.env.REDIS_URL });
@@ -28,7 +29,8 @@ export const processLocation = async (
   userId: string | undefined,
   email: string | undefined,
   latitude: number,
-  longitude: number
+  longitude: number,
+  visitorId: string | undefined
 ) => {
   if (!userId) throw new Error("User ID required");
   if (!latitude || !longitude) throw new Error("Lat/Lng required");
@@ -42,7 +44,41 @@ export const processLocation = async (
     where: { userId },
     orderBy: { inTime: "desc" },
   });
+  const storedFingerprint = await redis.get(`fingerprint:${userId}`);
+  if (storedFingerprint && storedFingerprint !== visitorId) {
+    // Log fraud
+    await prisma.geofenceFraud.create({
+      data: {
+        userId,
+        fenceId: lastRecord?.areaId ?? "",
+        oldFingerprintId: storedFingerprint,
+        newFingerprintId: visitorId ?? "",
+      },
+    });
+    console.warn("Device switch detected inside geofence!");
 
+    // Send alert email
+const alertKey = `fingerprint-alert:${userId}:${lastRecord?.areaId ?? "unknown"}`;
+const alertSent = await redis.get(alertKey);
+
+if (!alertSent) {
+  console.log("Attempting to send device mismatch alert to:", email);
+
+  const success = await sendEmailAlert(
+    email ?? "",
+    "Device Mismatch Alert",
+    `User ${userId} switched devices inside geofence ${lastRecord?.areaId}. Old: ${storedFingerprint}, New: ${visitorId ?? ""}`
+  );
+
+  if (success) {
+    await redis.set(alertKey, "sent");
+    await redis.expire(alertKey, 24 * 3600);
+  }
+}
+
+    // Update Redis to new fingerprint
+    await redis.set(`fingerprint:${userId}`, `${visitorId ?? ""}`, { EX: 24 * 3600 });
+  }
   const wasInside = lastRecord && !lastRecord.isDisconnected;
   let eventType: "ENTER" | "EXIT" | "SWITCH" | null = null;
   let payload: any = {};
@@ -68,6 +104,8 @@ export const processLocation = async (
         update: {},
       }),
     ]);
+        await redis.set(`fingerprint:${userId}`, `${visitorId ?? ""}`, { EX: 24 * 3600 });
+
     payload = { ...newRecord, userInFence: newUserInFence, areaDetails: await cacheAndGet(insideFence.id) };
   } else if (!insideFence && wasInside && lastRecord?.areaId) {
     // EXIT
@@ -83,6 +121,9 @@ export const processLocation = async (
       },
     });
     await prisma.userGeofence.deleteMany({ where: { userId, geofenceId: lastRecord.areaId } });
+    await redis.del(`fingerprint:${userId}`);
+    await redis.del(`fingerprint-alert:${userId}:${lastRecord?.areaId ?? "unknown"}`);
+
     payload = { ...updatedRecord, exitedFence: exitedFence ?? { id: lastRecord.areaId, name: "Unknown" } };
   } else if (insideFence && wasInside && lastRecord!.areaId !== insideFence.id) {
     // SWITCH
@@ -102,6 +143,8 @@ export const processLocation = async (
       prisma.userGeofence.create({ data: { userId, geofenceId: insideFence.id } }),
       prisma.userGeofence.deleteMany({ where: { userId, geofenceId: lastRecord!.areaId! } }),
     ]);
+        await redis.set(`fingerprint:${userId}`, `${visitorId ?? ""}`, { EX: 24 * 3600 });
+
     payload = {
       ...newRecord,
       userInFence: newUserInFence,
@@ -127,7 +170,7 @@ export const processLocation = async (
 // ─── Socket Handler ────────────────────────────
 export const handleSocketLocationUpdate = async (
   socket: Socket,
-  data: { latitude: number; longitude: number }
+  data: { latitude: number; longitude: number, visitorId?: string }
 ) => {
   try {
     const userId = socket.data?.user?.id;
@@ -139,7 +182,8 @@ export const handleSocketLocationUpdate = async (
       userId,
       socket.data.user.email,
       data.latitude,
-      data.longitude
+      data.longitude,
+      data.visitorId
     );
 
     // Always respond to client
