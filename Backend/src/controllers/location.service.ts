@@ -65,10 +65,7 @@ const alertSent = await redis.get(alertKey);
 
 if (!alertSent) {
   console.log("Attempting to send device mismatch alert to:", email);
-  await prisma.user.update({
-    where: { id: userId },
-    data: { currentStatus: false },
-  });
+
   const success = await sendEmailAlert(
     email ?? "",
     "Device Mismatch Alert",
