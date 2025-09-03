@@ -1,18 +1,89 @@
-    import { Namespace, Socket, Server as SocketIOServer } from "socket.io";
-import { sendGeofences, addGeofence, updateGeofence, deleteGeofence, getGeofenceDetails } from "../controllers/adminControllers";
+import { Namespace, Socket, Server as SocketIOServer } from "socket.io";
+import {
+  sendGeofences,
+  addGeofence,
+  updateGeofence,
+  deleteGeofence,
+  getGeofenceDetails,
+} from "../controllers/adminControllers";
 import { prisma } from "../server";
 
-export function registerAdminSocket(adminNamespace: Namespace, prismaInstance = prisma, ioInstance: SocketIOServer) {
+const onlineAdmins = new Map<string, string>();
+
+export function registerAdminSocket(
+  adminNamespace: Namespace,
+  prismaInstance = prisma,
+  ioInstance: SocketIOServer
+) {
   adminNamespace.on("connection", (socket: Socket) => {
     const adminId = socket.data.admin?.id;
-    console.log(`Admin connected: ${adminId} (${socket.id})`);
+    if (!adminId) return;
 
-    if (adminId) socket.join(`admin:${adminId}`);
+    console.log(`✅ Admin connected: ${adminId} (${socket.id})`);
+    onlineAdmins.set(adminId, socket.id);
 
-    // Geofence APIs
+    // ------------------ CHAT ------------------
+
+    // Admin joins a chat room with a specific user
+    socket.on("join-chat", ({ userId }) => {
+      if (!userId) return;
+
+      const room = `chat:${userId}:${adminId}`;
+      socket.join(room);
+      console.log(`Admin ${adminId} joined chat room ${room}`);
+      socket.emit("chat-joined", { room, userId });
+    });
+
+    // Send message to a specific user
+    socket.on("send-message", async ({ receiverId, content }) => {
+      if (!receiverId || !content) return;
+
+      try {
+        const message = await prismaInstance.message.create({
+          data: {
+            senderId: adminId,
+            receiverId,
+            senderRole: "ADMIN",
+            receiverRole: "USER",
+            content,
+          },
+        });
+
+        const room = `chat:${receiverId}:${adminId}`;
+        // Emit to both admin and user in the room
+        ioInstance.to(room).emit("receive-message", message);
+        socket.emit("message-sent", message);
+      } catch (err) {
+        console.error(`Send message error for admin ${adminId}:`, err);
+        socket.emit("error", { message: "Failed to send message" });
+      }
+    });
+
+    // Fetch chat history with a specific user
+    socket.on("fetch-messages", async ({ userId }) => {
+      if (!userId) return;
+
+      try {
+        const history = await prismaInstance.message.findMany({
+          where: {
+            OR: [
+              { senderId: adminId, receiverId: userId },
+              { senderId: userId, receiverId: adminId },
+            ],
+          },
+          orderBy: { createdAt: "asc" },
+        });
+
+        socket.emit("chat-history", history);
+      } catch (err) {
+        console.error(`Fetch messages error for admin ${adminId}:`, err);
+        socket.emit("error", { message: "Failed to fetch chat history" });
+      }
+    });
+
+    // ------------------ GEOFENCE ------------------
     socket.on("get-geofences", async () => {
       try {
-        if (!adminId) return socket.emit("geofences-list", []);
         const geofences = await prisma.geoFenceArea.findMany({
           where: { createdBy: adminId },
           select: {
@@ -34,8 +105,8 @@ export function registerAdminSocket(adminNamespace: Namespace, prismaInstance = 
           },
         });
         socket.emit("geofences-list", geofences);
-      } catch (error) {
-        console.error("Failed to fetch geofences:", error);
+      } catch (err) {
+        console.error(`Failed to fetch geofences for admin ${adminId}:`, err);
         socket.emit("error", { message: "Failed to fetch geofences" });
       }
     });
@@ -46,29 +117,10 @@ export function registerAdminSocket(adminNamespace: Namespace, prismaInstance = 
     socket.on("delete-geofence", (id) => deleteGeofence(socket, id));
     socket.on("get-geofence-details", (id) => getGeofenceDetails(socket, id));
 
-    // Messaging (Admin → User)
-    socket.on("send-message", async ({ receiverId, content }) => {
-      try {
-        const message = await prisma.message.create({
-          data: {
-            senderId: adminId,
-            receiverId,
-            senderRole: "ADMIN",
-            receiverRole: "USER",
-            content,
-          },
-        });
-
-        adminNamespace.to(`user:${receiverId}`).emit("receive-message", message);
-        socket.emit("message-sent", message);
-      } catch (err) {
-        console.error("Send message error:", err);
-        socket.emit("error", { message: "Failed to send message" });
-      }
-    });
-
+    // ------------------ DISCONNECT ------------------
     socket.on("disconnect", (reason) => {
       console.log(`Admin ${adminId} disconnected: ${reason}`);
+      onlineAdmins.delete(adminId);
     });
   });
 }

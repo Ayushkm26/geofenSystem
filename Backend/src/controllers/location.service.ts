@@ -44,7 +44,9 @@ export const processLocation = async (
     where: { userId },
     orderBy: { inTime: "desc" },
   });
+  console.log(visitorId);
   const storedFingerprint = await redis.get(`fingerprint:${userId}`);
+  console.log(storedFingerprint);
   if (storedFingerprint && storedFingerprint !== visitorId) {
     // Log fraud
     await prisma.geofenceFraud.create({
@@ -63,7 +65,10 @@ const alertSent = await redis.get(alertKey);
 
 if (!alertSent) {
   console.log("Attempting to send device mismatch alert to:", email);
-
+  await prisma.user.update({
+    where: { id: userId },
+    data: { currentStatus: false },
+  });
   const success = await sendEmailAlert(
     email ?? "",
     "Device Mismatch Alert",
@@ -105,7 +110,7 @@ if (!alertSent) {
       }),
     ]);
         await redis.set(`fingerprint:${userId}`, `${visitorId ?? ""}`, { EX: 24 * 3600 });
-
+        
     payload = { ...newRecord, userInFence: newUserInFence, areaDetails: await cacheAndGet(insideFence.id) };
   } else if (!insideFence && wasInside && lastRecord?.areaId) {
     // EXIT

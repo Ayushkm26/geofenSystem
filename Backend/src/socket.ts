@@ -9,11 +9,13 @@ import { PrismaExt } from "./server";
 
 export function initSockets(io: SocketIOServer, prisma: PrismaExt) {
   // USER SOCKETS
-  io.use(socketAuthMiddleware);
-  registerUserSocket(io, prisma);
+  const userNamespace = io.of("/");
+  userNamespace.use(socketAuthMiddleware);
+  registerUserSocket(userNamespace, prisma);
 
-  // ADMIN SOCKETS (namespace)
+  // ADMIN SOCKETS
   const adminNamespace: Namespace = io.of("/admin");
   adminNamespace.use(socketAdminMiddleware);
   registerAdminSocket(adminNamespace, prisma, io);
 }
+

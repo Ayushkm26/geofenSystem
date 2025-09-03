@@ -11,11 +11,13 @@ import { io } from 'socket.io-client';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Footer from '../components/Footers';
+import { useChat} from "../Context/ChatContext";
 
 
 const SOCKET_URL = `${import.meta.env.VITE_BASE_URL}/admin`;
 
 const AdminDashboard = ({type}) => {
+  const { chatData , setChatData } = useChat()
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,6 +129,7 @@ newSocket.on('geofence-deleted', (deletedId) => {
   }, []);
 
   // CRUD handlers
+  
   const handleAddGeofence = () => setIsCreateModalOpen(true);
 
   const handleCreateGeofence = (newGeofence) => {

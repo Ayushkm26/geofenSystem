@@ -7,8 +7,10 @@ import  UserContext, { LocationProvider } from './Context/UserContext.jsx'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AdminContext from './Context/AdminContex.jsx'
+import { ChatProvider } from './Context/ChatContext.jsx';
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+        <ChatProvider>
     <AdminContext>
       <LocationProvider>
         <UserContext>
@@ -19,6 +21,7 @@ createRoot(document.getElementById('root')).render(
       </UserContext>
     </LocationProvider>
     </AdminContext>
+    </ChatProvider>
   </StrictMode>,
 )
 

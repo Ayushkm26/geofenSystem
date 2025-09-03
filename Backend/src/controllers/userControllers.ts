@@ -206,14 +206,14 @@ export const createUser = async (req: Request, res: Response) => {
 export const loginUser = async (req: Request, res: Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
+   
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.password))) return res.status(400).json({ error: 'Invalid email or password' });
-
+    if(user.currentStatus==false)return res.status(403).json({error:"Your access has been blocked by admin"});
     const access = signAccessToken({ sub: user.id, role: user.role, email: user.email });
     const refresh = signRefreshToken({ sub: user.id, role: user.role, email: user.email });
     await persistToken(access, user.id, "ACCESS", new Date(Date.now() + 24*60*60*1000));

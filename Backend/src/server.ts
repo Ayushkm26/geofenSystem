@@ -11,6 +11,8 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import userRoutes from "./routes/userRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import chatRoutes from "./routes/chatRoutes";
+import resyncRoutes from "./routes/rsyncRoutes";
+
 
 // Sockets
 import { initSockets } from "./socket";
@@ -37,6 +39,7 @@ app.use(bodyParser.json());
 app.use("/api/users", userRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api", resyncRoutes);
 
 // HTTP + SOCKET.IO
 const PORT = process.env.PORT || 5000;
@@ -51,7 +54,7 @@ const io = new SocketIOServer(server, {
   },
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
-    skipMiddlewares: true,
+    skipMiddlewares: false,
   },
 });
 

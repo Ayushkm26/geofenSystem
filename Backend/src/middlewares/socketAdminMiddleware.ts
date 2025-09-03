@@ -15,40 +15,40 @@ export const socketAdminMiddleware = async (
   socket: Socket,
   next: (err?: Error) => void
 ) => {
-  try {
-    const token =
-      socket.handshake.auth?.token ||
-      socket.handshake.headers?.authorization?.split(" ")[1];
-
+ try {
+    const token = socket.handshake.auth?.token;
     if (!token) {
-      return next(new Error("❌ Admin auth token missing"));
+      console.log("❌ No token provided");
+      return next(new Error("Admin auth token missing"));
     }
-    console.log("Admin auth token found:", token);
 
     const jwtSecret = process.env.JWT_ACCESS_SECRET;
     if (!jwtSecret) {
-      return next(new Error("❌ JWT secret not configured"));
+      console.log("❌ JWT secret missing");
+      return next(new Error("JWT secret not configured"));
     }
 
-    const decoded = jwt.verify(token, jwtSecret) as AdminJwtPayload;
-  
+    let decoded: AdminJwtPayload;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as AdminJwtPayload;
+    } catch (err) {
+      console.log("❌ JWT verification failed:", err);
+      return next(new Error("Authentication failed"));
+    }
 
     if (!decoded || decoded.role !== "ADMIN") {
-      return next(new Error("❌ Unauthorized admin"));
+      console.log("❌ Invalid admin role:", decoded);
+      return next(new Error("Unauthorized admin"));
     }
-     console.log(decoded);
-    const admin = await prisma.admin.findUnique({
-      where: { id: decoded.sub }
-    });
 
+    const admin = await prisma.admin.findUnique({ where: { id: decoded.sub } });
     if (!admin) {
-      return next(new Error("❌ Admin not found"));
+      console.log("❌ Admin not found in DB for ID:", decoded.sub);
+      return next(new Error("Admin not found"));
     }
 
-    // Attach admin info to socket for later use
     socket.data.admin = admin;
-    
-    
+    console.log("✅ Admin socket authenticated:", admin.id);
     next();
   } catch (err) {
     console.error("❌ Admin socket auth error:", err);

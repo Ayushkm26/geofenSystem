@@ -110,7 +110,7 @@ const AdminHeader = () => {
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <button
-                        onClick={() => handleNavigation("/admindashboard")}
+                        onClick={() => handleNavigation("/adminchat")}
                         className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Message Users
@@ -118,7 +118,7 @@ const AdminHeader = () => {
                     </li>
                     <li>
                       <button
-                        onClick={() => handleNavigation("/resync")}
+                        onClick={() => handleNavigation("/adminresync")}
                         className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Resync Data
@@ -171,7 +171,7 @@ const AdminHeader = () => {
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <button
-                        onClick={() => handleNavigation("/admindashboard")}
+                        onClick={() => handleNavigation("/adminchat")}
                         className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Message Users
@@ -179,7 +179,7 @@ const AdminHeader = () => {
                     </li>
                     <li>
                       <button
-                        onClick={() => handleNavigation("/resync")}
+                        onClick={() => handleNavigation("/adminresync")}
                         className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100 transition-colors"
                       >
                         Resync Data
@@ -212,13 +212,13 @@ const AdminHeader = () => {
         {mobileMenuOpen && (
           <div className="sm:hidden mt-2 space-y-2 px-2 pb-3 bg-white rounded-lg shadow-sm border">
             <button
-              onClick={() => handleNavigation("/admindashboard")}
+              onClick={() => handleNavigation("/adminchat")}
               className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded transition-colors"
             >
               Message Users
             </button>
             <button
-              onClick={() => handleNavigation("/resync")}
+              onClick={() => navigate("/adminresync")}
               className="block w-full text-left px-4 py-2 hover:bg-gray-100 font-medium rounded transition-colors"
             >
               Resync Data

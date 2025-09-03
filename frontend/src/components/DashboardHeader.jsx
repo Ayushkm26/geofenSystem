@@ -92,19 +92,19 @@ const DashboardHeader = ({ type }) => {
                 <ul className="py-2 text-sm text-gray-700">
                   <li>
                     <button
-                      onClick={() => navigate("/chat")}
+                      onClick={() => navigate("/userchat")}
                       className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100"
                     >
                       Message Admin
                     </button>
                   </li>
                   <li>
-                    <button className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
+                    <button onClick={() => navigate("/userresync")} className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
                       Resync
                     </button>
                   </li>
                   <li>
-                    <button className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
+                    <button onClick={() => navigate("/help")} className="block w-full text-left px-4 py-2 font-medium hover:bg-gray-100">
                       Help
                     </button>
                   </li>
