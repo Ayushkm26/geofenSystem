@@ -46,7 +46,7 @@ model User {
   email         String         @unique
   name          String
   password      String
-  currentStatus Boolean        @default(false)
+  currentStatus Boolean        @default(true)
   totalInOut    Int            @default(0)
   lastAreaId    String?
   createdAt     DateTime       @default(now())
