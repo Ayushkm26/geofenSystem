@@ -21,7 +21,7 @@ export function registerAdminSocket(
 
     console.log(`✅ Admin connected: ${adminId} (${socket.id})`);
     onlineAdmins.set(adminId, socket.id);
-
+       socket.join(`admin:${adminId}`);
     // ------------------ CHAT ------------------
 
     // Admin joins a chat room with a specific user
