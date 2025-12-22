@@ -42,7 +42,7 @@ app.use("/api/chat", chatRoutes);
 app.use("/api", resyncRoutes);
 
 // HTTP + SOCKET.IO
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 const server = http.createServer(app);
 
 const io = new SocketIOServer(server, {
@@ -67,9 +67,10 @@ process.on("uncaughtException", (err) => {
 });
 
 // START SERVER
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Socket.IO available at ${process.env.CLIENT_URL}/api/socket.io`);
+  console.log("Socket.IO available at /api/socket.io");
 });
+
 
 export { app, io, prisma };
