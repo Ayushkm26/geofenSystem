@@ -34,6 +34,9 @@ app.use(
 );
 
 app.use(bodyParser.json());
+app.get("/", (_req, res) => {
+  res.status(200).send("OK");
+});
 
 // API ROUTES
 app.use("/api/users", userRoutes);
