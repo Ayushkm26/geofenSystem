@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { io } from "socket.io-client";
-import { LocationContext } from "../Context/UserContext"; // adjust path
+import { LocationContext } from "../Context/UserContext";
 import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { useChat } from "../Context/ChatContext";
-
 
 function Cards({ isShared, setIsShared }) {
   const { setChatData } = useChat();
 
   const [isSharing, setIsSharing] = useState(false);
   const [socket, setSocket] = useState(null);
-  const intervalRef = useRef(null); // ✅ Ref for intervals
+  const intervalRef = useRef(null);
   const [visitorId, setVisitorId] = useState(null);
 
   const [outside, setOutside] = useState(false);
@@ -63,11 +62,11 @@ function Cards({ isShared, setIsShared }) {
       );
       setOutside(true);
     });
+    
     newSocket.on("open-chat", ({ adminId }) => {
-    console.log("User entered admin geofence, opening chat with:", adminId);
+      console.log("User entered admin geofence, opening chat with:", adminId);
       setChatData({ open: true, adminId });
-      // store adminId to send messages to
-  });
+    });
 
     newSocket.on("location-error", (err) => {
       console.error("Location error:", err);
@@ -118,7 +117,6 @@ function Cards({ isShared, setIsShared }) {
         );
       }, 5000);
     } else {
-      // Stop sharing
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -138,38 +136,82 @@ function Cards({ isShared, setIsShared }) {
   }, [isSharing, socket, visitorId]);
 
   return (
-    <div className="custom-rectangle-card w-full sm:w-[500px] h-[220px] p-6 bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700 flex flex-col justify-between">
-      <h5 className="mb-2 text-xl font-bold text-gray-900 dark:text-white">
-        Start sharing your live location
-      </h5>
-      <p className="mb-3 text-sm text-gray-700 dark:text-gray-400">
-        Share your live location with your friends and family. They can track you in real-time on the map.
-      </p>
+    <div className="w-full sm:w-[500px] h-[220px] bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+      {/* Header with gradient accent */}
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-2.5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h5 className="text-lg font-bold text-white">
+            Live Location Sharing
+          </h5>
+        </div>
+      </div>
 
-      <div className="flex justify-center items-center mt-3">
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 mr-3 disabled:opacity-50"
-          onClick={() => {
-            setIsSharing(true);
-            setIsShared(true);
-          }}
-          disabled={isSharing}
-        >
-          Start sharing
-        </button>
+      {/* Content */}
+      <div className="p-4">
+        <p className="text-gray-700 text-sm leading-relaxed mb-3">
+          Share your live location with your friends and family. They can track you in real-time on the map.
+        </p>
 
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 ml-3 disabled:opacity-50"
-          onClick={() => {
-            setIsSharing(false);
-            setIsShared(false);
-          }}
-          disabled={!isSharing}
-        >
-          Stop sharing
-        </button>
+        {/* Status Indicator */}
+        {isSharing && (
+          <div className="mb-3 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-xs text-green-700 font-medium">Location sharing active</span>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className={`flex-1 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md
+              ${isSharing 
+                ? 'bg-gray-300 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:shadow-lg hover:scale-105'
+              }`}
+            onClick={() => {
+              setIsSharing(true);
+              setIsShared(true);
+            }}
+            disabled={isSharing}
+          >
+            <span className="flex items-center justify-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Start sharing
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`flex-1 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-all duration-200 shadow-md
+              ${!isSharing 
+                ? 'bg-gray-300 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 hover:shadow-lg hover:scale-105'
+              }`}
+            onClick={() => {
+              setIsSharing(false);
+              setIsShared(false);
+            }}
+            disabled={!isSharing}
+          >
+            <span className="flex items-center justify-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+              </svg>
+              Stop sharing
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

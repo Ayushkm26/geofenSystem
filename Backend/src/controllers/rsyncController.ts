@@ -21,19 +21,25 @@ export const createResyncRequest = async (req: Request, res: Response) => {
     }
 
     // 2. Find admin responsible for this geofence
-    const admin = await prisma.admin.findFirst({
-      where: {
-        geofences: {
-          some: {
-            id: fenceId,
-          },
-        },
-      },
-    });
+    console.log("Finding geofence with ID:", fenceId);
+const fence = await prisma.geoFenceArea.findUnique({
+  where: {
+    id: fenceId, 
+  },
+  include: {
+    admin: true,
+  },
+});
 
-    if (!admin) {
-      return res.status(404).json({ error: "No admin found for this geofence." });
-    }
+if (!fence || !fence.admin) {
+  return res.status(404).json({
+    error: "No admin found for this geofence",
+  });
+}
+
+const admin = fence.admin;
+
+
 
     // 3. Create new resync request
     const resyncRequest = await prisma.resync.create({
